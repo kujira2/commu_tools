@@ -47,4 +47,15 @@ export class ModbusCommands {
         const crc = this.calculateCRC(data, 6);
         return new Uint8Array([...data, crc[0], crc[1]]);
     }
+
+    static createControlCommand(isOn) {
+        const data = new Uint8Array([
+            0x0B,       // スレーブアドレス
+            0x04,       // ファンクションコード
+            0x76, 0x6B, // リファレンス番号 30107
+            0x00, isOn ? 0x01 : 0x02  // 制御値（ON: 1, OFF: 2）
+        ]);
+        const crc = this.calculateCRC(data, 6);
+        return new Uint8Array([...data, crc[0], crc[1]]);
+    }
 }
