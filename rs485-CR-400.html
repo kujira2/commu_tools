@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CR-400通信用ﾌﾟﾛｸﾞﾗﾑ試作</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 3fr 7fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .display-area,
+        .connection-area,
+        .control-panel {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
+        .chart-container {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #fff;
+        }
+
+        .response-area {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
+        .status {
+            padding: 5px;
+            border-radius: 3px;
+            margin-left: 5px;
+            display: inline-block;
+        }
+
+        .connected {
+            background-color: #90EE90;
+        }
+
+        .disconnected {
+            background-color: #FFB6C1;
+        }
+
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: monospace;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        button {
+            padding: 5px 15px;
+            margin: 5px;
+        }
+
+        .command-log {
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+
+        h3 {
+            font-size: 1.1em;
+            margin: 10px 0;
+        }
+
+        .control-panel input {
+            width: 80px;
+            margin-right: 10px;
+        }
+
+        .update-control {
+            margin-top: 10px;
+        }
+
+        .update-control input {
+            width: 60px;
+        }
+        .voltage-display {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #fff;
+            margin-top: 5px;
+            text-align: center;
+            max-height: 30px;
+        }
+
+
+.voltage-display h2 {
+    font-size: 1.5em;
+    margin: 0;
+}
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>CR-400通信用プログラム(設定&ﾓﾆﾀ―表示)</h1>
+
+        <div class="layout-grid">
+            <div class="left-panel">
+                <div class="connection-area">
+                    <button id="connectButton">接続</button>
+                    <button id="disconnectButton" disabled>切断</button>
+                    <span id="connectionStatus" class="status disconnected">Disconnected</span>
+                </div>
+
+                <div class="display-area">
+                    <div>
+                        <h3>CR-400設定器:</h3>
+                        <p>FS設定値: <span id="id1-fullscale">--</span></p>
+                    </div>
+                    <div>
+                        <h3>CR-400表示器:</h3>
+                        <p>FS設定値:　<span id="id2-fullscale">--</span></p>
+                    </div>
+                </div>
+
+                <div class="control-panel">
+                    <h2>流量設定[%]</h2>
+                    <div>
+                        <label>パーセンテージ (0-100.0): </label>
+                        <input type="number" id="percentInput" step="0.1" min="0" max="100.0">
+                        <button onclick="writeValue()" id="writeButton" disabled>流量設定</button>
+                    </div>
+                    <div class="update-control">
+                        <label>更新間隔 (s): </label>
+                        <input type="number" id="updateInterval" value="1" min="1" max="60">
+                        <button id="stopRecording" disabled>記録停止</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="voltageChart"></canvas>
+            </div>
+            <div class="voltage-display">
+                <h2>出力電圧: <span id="currentVoltage">0.000 [V]</span></h2>
+            </div>
+        </div>
+
+        <div class="response-area">
+            <h2>Communication Log</h2>
+            <div id="commandLog" class="command-log"></div>
+        </div>
+    </div>
+
+    <script>
+        let port = null;
+        let reader = null;
+        let writer = null;
+        let recordingInterval = null;
+        let recordingTimeout = null;
+        let isRecording = false;
+        let lastDataTime = null;
+
+
+
+        function stringToHex(str) {
+            return Array.from(str).map(char => 
+                char.charCodeAt(0).toString(16).padStart(2, '0')
+            ).join('');
+        }
+
+        function hexToString(hex) {
+            const bytes = hex.match(/.{2}/g) || [];
+            return bytes.map(byte => String.fromCharCode(parseInt(byte, 16))).join('');
+        }
+
+        function hexToUint8Array(hexString) {
+            const pairs = hexString.match(/[\dA-F]{2}/gi);
+            return new Uint8Array(pairs.map(pair => parseInt(pair, 16)));
+        }
+
+        function calculateChecksum(hexString) {
+            let sum = 0;
+            for (let i = 0; i < hexString.length; i += 2) {
+                sum += parseInt(hexString.substr(i, 2), 16);
+            }
+            const hexChecksum = (sum & 0xFF).toString(16).padStart(2, '0').toUpperCase();
+            return stringToHex(hexChecksum);
+        }
+
+        function createReadCommand(deviceId, address) {
+            const formattedDeviceId = deviceId.toString().padStart(3, '0');
+            const formattedAddress = address.toString().padStart(4, '0');
+            const cmdStr = `${formattedDeviceId}R${formattedAddress}`;
+            const cmdHex = stringToHex(cmdStr);
+            const fullCmdHex = `02${cmdHex}03`;
+            const checksum = calculateChecksum(fullCmdHex);
+            return `${fullCmdHex}${checksum}0D0A`;
+        }
+
+        function createWriteCommand(deviceId, address, value, sign = '+', digits = '4') {
+            const formattedDeviceId = deviceId.toString().padStart(3, '0');
+            const formattedAddress = address.toString().padStart(4, '0');
+            const valueStr = Math.abs(value).toString().padStart(4, '0');
+            const cmdStr = `${formattedDeviceId}W${formattedAddress}${sign}${digits}${valueStr}`;
+            const cmdHex = stringToHex(cmdStr);
+            const fullCmdHex = `02${cmdHex}03`;
+            const checksum = calculateChecksum(fullCmdHex);
+            return `${fullCmdHex}${checksum}0D0A`;
+        }
+
+        function logCommand(send, hexData) {
+            const log = document.getElementById('commandLog');
+            const entry = document.createElement('pre');
+            const timestamp = new Date().toLocaleTimeString();
+            const direction = send ? 'SEND' : 'RECV';
+            const asciiData = hexToString(hexData.replace(/^02|03.*$/g, ''));
+            entry.textContent = `[${timestamp}] ${direction}:\nHEX: ${hexData}\nASCII: ${asciiData}`;
+            log.insertBefore(entry, log.firstChild);
+            if (log.children.length > 100) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
+        async function sendCommand(command) {
+            if (!writer) return null;
+
+            try {
+                logCommand(true, command);
+                const data = hexToUint8Array(command);
+                await writer.write(data);
+
+                const response = await readResponse();
+                if (response) {
+                    const responseHex = Array.from(response)
+                        .map(byte => byte.toString(16).padStart(2, '0'))
+                        .join('');
+                    logCommand(false, responseHex);
+                }
+                return response;
+            } catch (error) {
+                console.error('Error sending command:', error);
+                return null;
+            }
+        }
+
+        async function readResponse() {
+            if (!reader) return null;
+
+            try {
+                const response = [];
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    
+                    response.push(...value);
+                    if (response.length >= 4 && 
+                        response[response.length - 2] === 0x0D && 
+                        response[response.length - 1] === 0x0A) {
+                        break;
+                    }
+                }
+                return new Uint8Array(response);
+            } catch (error) {
+                console.error('Error reading response:', error);
+                return null;
+            }
+        }
+
+        function parseResponse(response) {
+            if (!response) return null;
+
+            const hexString = Array.from(response)
+                .map(byte => byte.toString(16).padStart(2, '0'))
+                .join('');
+
+            const asciiString = hexToString(hexString.slice(2, -8));
+            const pattern = /(\d{3})([RW])(\d{4})(\d{2})([+-])(\d)(\d+)/;
+            const match = asciiString.match(pattern);
+
+            if (!match) return null;
+
+            return {
+                deviceId: match[1],
+                command: match[2],
+                address: match[3],
+                status: match[4],
+                sign: match[5],
+                digits: match[6],
+                value: parseInt(match[7]) * (match[5] === '-' ? -1 : 1)
+            };
+        }
+
+        const ctx = document.getElementById('voltageChart').getContext('2d');
+        const voltageChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Voltage (V)',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 7,
+                        title: {
+                            display: true,
+                            text: 'Voltage (V)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time (s)'
+                        },
+                        ticks: {
+                            maxTicksLimit: 10
+                        }
+                    }
+                },
+                animation: {
+                    duration: 0
+                }
+            }
+        });
+
+        function formatFullScale(value, dp) {
+            const numValue = parseInt(value);
+            const scale = Math.pow(10, -dp);
+            return (numValue * scale).toFixed(dp);
+        }
+
+        async function connectSerial() {
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({
+                    baudRate: 9600,
+                    dataBits: 8,
+                    stopBits: 1,
+                    parity: 'none',
+                    flowControl: 'none'
+                });
+
+                reader = port.readable.getReader();
+                writer = port.writable.getWriter();
+
+                document.getElementById('connectButton').disabled = true;
+                document.getElementById('disconnectButton').disabled = false;
+                document.getElementById('writeButton').disabled = false;
+                document.getElementById('connectionStatus').textContent = 'Connected';
+                document.getElementById('connectionStatus').className = 'status connected';
+
+                await readInitialValues();
+            } catch (error) {
+                console.error('Error opening serial port:', error);
+                alert('Failed to connect to serial port');
+            }
+        }
+
+        async function disconnectSerial() {
+            try {
+                if (recordingInterval) {
+                    clearInterval(recordingInterval);
+                    recordingInterval = null;
+                }
+                if (reader) {
+                    await reader.cancel();
+                    await reader.releaseLock();
+                }
+                if (writer) {
+                    await writer.releaseLock();
+                }
+                if (port) {
+                    await port.close();
+                }
+
+                reader = null;
+                writer = null;
+                port = null;
+
+                document.getElementById('connectButton').disabled = false;
+                document.getElementById('disconnectButton').disabled = true;
+                document.getElementById('writeButton').disabled = true;
+                document.getElementById('connectionStatus').textContent = 'Disconnected';
+                document.getElementById('connectionStatus').className = 'status disconnected';
+                document.getElementById('stopRecording').disabled = true;
+            } catch (error) {
+                console.error('Error closing serial port:', error);
+            }
+        }
+
+        async function readInitialValues() {
+            try {
+                const id1FullscaleCmd = createReadCommand('1', '0000');
+                const id1DpCmd = createReadCommand('1', '0001');
+                
+                const id1FullscaleResp = await sendCommand(id1FullscaleCmd);
+                const id1DpResp = await sendCommand(id1DpCmd);
+
+                if (id1FullscaleResp && id1DpResp) {
+                    const id1FullscaleData = parseResponse(id1FullscaleResp);
+                    const id1DpData = parseResponse(id1DpResp);
+                    if (id1FullscaleData && id1DpData) {
+                        const formattedValue = formatFullScale(id1FullscaleData.value, id1DpData.value);
+                        document.getElementById('id1-fullscale').textContent = formattedValue + 'V';
+                    }
+                }
+
+                const id2FullscaleCmd = createReadCommand('2', '0000');
+                const id2DpCmd = createReadCommand('2', '0001');
+                
+                const id2FullscaleResp = await sendCommand(id2FullscaleCmd);
+                const id2DpResp = await sendCommand(id2DpCmd);
+
+                if (id2FullscaleResp && id2DpResp) {
+                    const id2FullscaleData = parseResponse(id2FullscaleResp);
+                    const id2DpData = parseResponse(id2DpResp);
+                    if (id2FullscaleData && id2DpData) {
+                        const formattedValue = formatFullScale(id2FullscaleData.value, id2DpData.value);
+                        document.getElementById('id2-fullscale').textContent = formattedValue + 'V';
+                    }
+                }
+            } catch (error) {
+                console.error('Error reading initial values:', error);
+            }
+        }
+
+    // 改善された電圧読み取り開始関数
+    function startVoltageReading() {
+        isRecording = true;
+        lastDataTime = Date.now();
+        document.getElementById('stopRecording').disabled = false;
+
+        const updateIntervalMs = parseInt(document.getElementById('updateInterval').value) * 1000;
+
+        recordingInterval = setInterval(async () => {
+            if (!isRecording) return;
+
+            const currentTime = Date.now();
+            const elapsedTime = (currentTime - lastDataTime) / 1000;
+
+            const cmd = createReadCommand('2', '1000');
+            const response = await sendCommand(cmd);
+            const data = parseResponse(response);
+
+            if (data) {
+                const voltage = data.value / 1000;
+
+                // 電圧表示を更新
+                document.getElementById('currentVoltage').textContent = voltage.toFixed(3) + " [V]";
+
+                // 新しいデータポイントを追加
+                voltageChart.data.labels.push(elapsedTime.toFixed(1));
+                voltageChart.data.datasets[0].data.push(voltage);
+
+                // 10秒を超えるデータを削除（スクロールウィンドウ）
+                const windowSize = 10; // 10秒間のウィンドウ
+                while (voltageChart.data.labels.length > 0 &&
+                    parseFloat(voltageChart.data.labels[voltageChart.data.labels.length - 1]) -
+                    parseFloat(voltageChart.data.labels[0]) > windowSize) {
+                    voltageChart.data.labels.shift();
+                    voltageChart.data.datasets[0].data.shift();
+                }
+
+                voltageChart.update();
+            }
+        }, updateIntervalMs);
+    }
+    
+    // 記録停止関数
+    function stopRecording() {
+        isRecording = false;
+        if (recordingInterval) {
+            clearInterval(recordingInterval);
+            recordingInterval = null;
+        }
+        if (recordingTimeout) {
+            clearTimeout(recordingTimeout);
+            recordingTimeout = null;
+        }
+        document.getElementById('stopRecording').disabled = true;
+    }
+
+
+            // イベントリスナーの設定
+            document.getElementById('connectButton').addEventListener('click', connectSerial);
+            document.getElementById('disconnectButton').addEventListener('click', disconnectSerial);
+            document.getElementById('stopRecording').addEventListener('click', stopRecording);
+            document.getElementById('updateInterval').addEventListener('change', function () {
+                if (recordingInterval) {
+                    stopRecording();
+                    startVoltageReading();
+                }
+            });
+            // 改善された値書き込み関数
+        async function writeValue() {
+            const percent = parseFloat(document.getElementById('percentInput').value);
+             if (isNaN(percent) || percent < 0 || percent > 100.0) {
+                 alert('Please enter a valid percentage between 0 and 100.0');
+            return;
+        }
+
+            // 既存の記録をクリア
+            if (recordingInterval) {
+                clearInterval(recordingInterval);
+                recordingInterval = null;
+            }
+            if (recordingTimeout) {
+                clearTimeout(recordingTimeout);
+                recordingTimeout = null;
+            }
+
+            // グラフをクリア
+            voltageChart.data.labels = [];
+            voltageChart.data.datasets[0].data = [];
+            voltageChart.update();
+
+            // 電圧表示をリセット
+            document.getElementById('currentVoltage').textContent = "0.000 [V]";
+
+            // 値を書き込む
+            const value = Math.round(percent * 5000 / 100);
+            const cmd = createWriteCommand('1', '0300', value);
+            await sendCommand(cmd);
+
+            // 5秒後に記録開始
+            recordingTimeout = setTimeout(() => {
+                startVoltageReading();
+            }, 5000);
+        }
+
+    // 改善された電圧読み取り開始関数
+    // 改善された電圧読み取り開始関数
+    function startVoltageReading() {
+        isRecording = true;
+        lastDataTime = Date.now();
+        document.getElementById('stopRecording').disabled = false;
+
+        const updateIntervalMs = parseInt(document.getElementById('updateInterval').value) * 1000;
+
+        recordingInterval = setInterval(async () => {
+            if (!isRecording) return;
+
+            const currentTime = Date.now();
+            const elapsedTime = (currentTime - lastDataTime) / 1000;
+
+            const cmd = createReadCommand('2', '1000');
+            const response = await sendCommand(cmd);
+            const data = parseResponse(response);
+
+            if (data) {
+                // 電圧値の計算を修正
+                let voltage;
+                if (data.value < 0) {
+                    voltage = Math.abs(data.value) / 1000.0;
+                    voltage = -voltage;
+                } else {
+                    voltage = data.value / 1000.0;
+                }
+
+                // 電圧表示を更新（符号に応じて表示を調整）
+                const displayVoltage = voltage.toFixed(3);
+                document.getElementById('currentVoltage').textContent = `${displayVoltage} [V]`;
+
+                // 新しいデータポイントを追加
+                voltageChart.data.labels.push(elapsedTime.toFixed(1));
+                voltageChart.data.datasets[0].data.push(voltage);
+
+                // デバッグ用のログ出力
+                console.log('Raw value:', data.value, 'Calculated voltage:', voltage);
+
+                // 10秒を超えるデータを削除（スクロールウィンドウ）
+                const windowSize = 10; // 10秒間のウィンドウ
+                while (voltageChart.data.labels.length > 0 &&
+                    parseFloat(voltageChart.data.labels[voltageChart.data.labels.length - 1]) -
+                    parseFloat(voltageChart.data.labels[0]) > windowSize) {
+                    voltageChart.data.labels.shift();
+                    voltageChart.data.datasets[0].data.shift();
+                }
+
+                voltageChart.update();
+            }
+        }, updateIntervalMs);
+    }
+
+
+            document.getElementById('connectButton').addEventListener('click', connectSerial);
+            document.getElementById('disconnectButton').addEventListener('click', disconnectSerial);
+        </script>
+            </body>
+            
+            </html>
