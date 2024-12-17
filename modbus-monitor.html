@@ -2,8 +2,9 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="origin-trial" content="AnlT7gRo/750gGKtoI/A3D2rL5yAQA9wISlLqHGE6vJQinPfk0HiIij5LhWs+iuB7mTeotXmEXkvdpOAC1YjAgAAAG97Im9yaWdpbiI6ImNocm9tZS1leHRlbnNpb246Ly9sampoamFha21uY2lib25uanBhb2dsYmhjamVvbGhrayIsImZlYXR1cmUiOiJJQ2Fubm90QmVsaWV2ZVlvdVdhc3RlZFlvdXJUaW1lRGVjb2RpbmdUaGlzIiwiZXhwaXJ5Ijo1NzI1NDA3OTk5fQ==">
     <title>Modbus RTU 温度モニター</title>
-    <link rel="stylesheet" href="js/styles.css">
+    <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
 </head>
 <body>
@@ -30,6 +31,7 @@
                 <div style="margin-top: 10px;">
                     <button id="setTemp" disabled>温度設定</button>
                     <button id="return25" disabled>25℃復帰</button>
+                    <button id="controlButton" class="control-button control-off" disabled>定値<br>運転<br>OFF</button>
                 </div>
             </div>
 
@@ -38,7 +40,6 @@
                     タイマー運転時間 (分):
                     <input type="number" id="timerDuration" value="0" min="0" max="5000">
                 </label>
-                <br>
                 <label>
                     タイマー終了時温度 (0-60.0℃):
                     <input type="number" id="timerTemp" value="25.0" min="0" max="60" step="0.1">
@@ -64,15 +65,16 @@
     </div>
 
     <script type="module">
-        import { ModbusCommands } from './js/modbus-commands.js';
-        import { ChartManager } from './js/modbus-chart.js';
-        import { TimerManager } from './js/modbus-timer.js';
+        import { ModbusCommands } from './modbus-commands.js';
+        import { ChartManager } from './modbus-chart.js';
+        import { TimerManager } from './modbus-timer.js';
 
         let port;
         let keepReading = false;
         let updateIntervalMs = 1000;
         let chartManager;
         let timerManager;
+        let isControlOn = false;
 
         function showDebugInfo(message, data = null) {
             const debugInfo = document.getElementById('debugInfo');
@@ -259,6 +261,38 @@
                 document.getElementById('tempSetpoint').value = '25.0';
             });
 
+            // 制御ボタンのイベントリスナー
+            document.getElementById('controlButton').addEventListener('click', async () => {
+                try {
+                    const command = ModbusCommands.createControlCommand(!isControlOn);
+                    const writer = port.writable.getWriter();
+                    await writer.write(command);
+                    writer.releaseLock();
+
+                    isControlOn = !isControlOn;
+                    const button = document.getElementById('controlButton');
+
+                    if (isControlOn) {
+                        button.textContent = '定値運転\nON';
+                        button.classList.remove('control-off');
+                        button.classList.add('control-on');
+                    } else {
+                        button.textContent = '定値運転\nOFF';
+                        button.classList.remove('control-on');
+                        button.classList.add('control-off');
+                    }
+
+                    showDebugInfo('制御コマンド送信', command);
+                    document.getElementById('statusText').textContent =
+                        `制御状態変更: ${isControlOn ? 'ON' : 'OFF'}`;
+                } catch (error) {
+                    console.error('制御エラー:', error);
+                    showDebugInfo('制御エラー: ' + error.message);
+                }
+            });
+            
+            // connectToPort 関数内の成功時の処理に追加
+            document.getElementById('controlButton').disabled = false;
             // タイマー開始ボタン
             document.getElementById('startTimer').addEventListener('click', () => {
                 const duration = parseInt(document.getElementById('timerDuration').value);
