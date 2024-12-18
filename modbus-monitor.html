@@ -260,35 +260,72 @@
                 document.getElementById('tempSetpoint').value = '25.0';
             });
 
-            // 制御ボタンのイベントリスナー
-            document.getElementById('controlButton').addEventListener('click', async () => {
-                try {
-                    const command = ModbusCommands.createControlCommand(!isControlOn);
-                    const writer = port.writable.getWriter();
-                    await writer.write(command);
-                    writer.releaseLock();
+           // 制御ボタンのイベントリスナー
+document.getElementById('controlButton').addEventListener('click', async () => {
+    try {
+        const commands = ModbusCommands.createControlCommand(!isControlOn);
+        const writer = port.writable.getWriter();
+        
+        // 46001に0を書き込む
+        await writer.write(commands.write46001);
+        await new Promise(resolve => setTimeout(resolve, 100)); // 少し待機
+        
+        // 46001の値を読み取って確認
+        writer.write(commands.read46001);
+        let reader = port.readable.getReader();
+        const response46001 = await readWithTimeout(reader, 7, 1000);
+        reader.releaseLock();
+        
+        if (response46001[0] !== 0x0B || response46001[1] !== 0x03 || 
+            response46001[3] !== 0x00 || response46001[4] !== 0x00) {
+            throw new Error('46001の設定が失敗しました');
+        }
+        
+        // 46002に制御値を書き込む
+        await writer.write(commands.write46002);
+        await new Promise(resolve => setTimeout(resolve, 100)); // 少し待機
+        
+        // 46002の値を読み取って確認
+        writer.write(commands.read46002);
+        reader = port.readable.getReader();
+        const response46002 = await readWithTimeout(reader, 7, 1000);
+        reader.releaseLock();
+        
+        const expectedValue = !isControlOn ? 0x01 : 0x00;
+        if (response46002[0] !== 0x0B || response46002[1] !== 0x03 || 
+            response46002[3] !== 0x00 || response46002[4] !== expectedValue) {
+            throw new Error('46002の設定が失敗しました');
+        }
+        
+        writer.releaseLock();
 
-                    isControlOn = !isControlOn;
-                    const button = document.getElementById('controlButton');
+        // 全ての確認が成功したら状態を更新
+        isControlOn = !isControlOn;
+        const button = document.getElementById('controlButton');
 
-                    if (isControlOn) {
-                        button.textContent = '定値運転\nON';
-                        button.classList.remove('control-off');
-                        button.classList.add('control-on');
-                    } else {
-                        button.textContent = '定値運転\nOFF';
-                        button.classList.remove('control-on');
-                        button.classList.add('control-off');
-                    }
+        if (isControlOn) {
+            button.textContent = '定値運転\nON';
+            button.classList.remove('control-off');
+            button.classList.add('control-on');
+        } else {
+            button.textContent = '定値運転\nOFF';
+            button.classList.remove('control-on');
+            button.classList.add('control-off');
+        }
 
-                    showDebugInfo('制御コマンド送信', command);
-                    document.getElementById('statusText').textContent =
-                        `制御状態変更: ${isControlOn ? 'ON' : 'OFF'}`;
-                } catch (error) {
-                    console.error('制御エラー:', error);
-                    showDebugInfo('制御エラー: ' + error.message);
-                }
-            });
+        showDebugInfo('制御コマンド送信成功', 
+            `46001: ${bytesToHex(response46001)}\n` +
+            `46002: ${bytesToHex(response46002)}`);
+        document.getElementById('statusText').textContent =
+            `制御状態変更: ${isControlOn ? 'ON' : 'OFF'}`;
+            
+    } catch (error) {
+        console.error('制御エラー:', error);
+        showDebugInfo('制御エラー: ' + error.message);
+        // エラー時は状態を変更しない
+        isControlOn = isControlOn; // 現状維持
+    }
+});
             
             // connectToPort 関数内の成功時の処理に追加
             document.getElementById('controlButton').disabled = false;
