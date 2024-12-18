@@ -58,7 +58,7 @@ export class ModbusCommands {
             0x00, 0x00  // 値: 0
         ]);
         const crc1 = this.calculateCRC(writeZeroTo46001, 6);
-        
+
         // 46002に制御値を書き込む（Start:1, Stop:0）
         const writeControlTo46002 = new Uint8Array([
             0x0B,       // スレーブアドレス
