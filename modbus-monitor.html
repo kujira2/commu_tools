@@ -260,19 +260,26 @@
                 document.getElementById('tempSetpoint').value = '25.0';
             });
 
-           // 制御ボタンのイベントリスナー
+// 制御ボタンのイベントリスナー
 document.getElementById('controlButton').addEventListener('click', async () => {
+    let writer = null;
+    let reader = null;
+    
     try {
         const commands = ModbusCommands.createControlCommand(!isControlOn);
-        const writer = port.writable.getWriter();
         
         // 46001に0を書き込む
+        writer = port.writable.getWriter();
         await writer.write(commands.write46001);
+        writer.releaseLock();
         await new Promise(resolve => setTimeout(resolve, 100)); // 少し待機
         
         // 46001の値を読み取って確認
-        writer.write(commands.read46001);
-        let reader = port.readable.getReader();
+        writer = port.writable.getWriter();
+        await writer.write(commands.read46001);
+        writer.releaseLock();
+        
+        reader = port.readable.getReader();
         const response46001 = await readWithTimeout(reader, 7, 1000);
         reader.releaseLock();
         
@@ -282,11 +289,16 @@ document.getElementById('controlButton').addEventListener('click', async () => {
         }
         
         // 46002に制御値を書き込む
+        writer = port.writable.getWriter();
         await writer.write(commands.write46002);
+        writer.releaseLock();
         await new Promise(resolve => setTimeout(resolve, 100)); // 少し待機
         
         // 46002の値を読み取って確認
-        writer.write(commands.read46002);
+        writer = port.writable.getWriter();
+        await writer.write(commands.read46002);
+        writer.releaseLock();
+        
         reader = port.readable.getReader();
         const response46002 = await readWithTimeout(reader, 7, 1000);
         reader.releaseLock();
@@ -296,8 +308,6 @@ document.getElementById('controlButton').addEventListener('click', async () => {
             response46002[3] !== 0x00 || response46002[4] !== expectedValue) {
             throw new Error('46002の設定が失敗しました');
         }
-        
-        writer.releaseLock();
 
         // 全ての確認が成功したら状態を更新
         isControlOn = !isControlOn;
@@ -324,6 +334,22 @@ document.getElementById('controlButton').addEventListener('click', async () => {
         showDebugInfo('制御エラー: ' + error.message);
         // エラー時は状態を変更しない
         isControlOn = isControlOn; // 現状維持
+    } finally {
+        // 確実にロックを解放
+        if (writer && !writer.closed) {
+            try {
+                writer.releaseLock();
+            } catch (e) {
+                console.error('Writer解放エラー:', e);
+            }
+        }
+        if (reader && !reader.closed) {
+            try {
+                reader.releaseLock();
+            } catch (e) {
+                console.error('Reader解放エラー:', e);
+            }
+        }
     }
 });
             
