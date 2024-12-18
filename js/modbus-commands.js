@@ -48,14 +48,50 @@ export class ModbusCommands {
         return new Uint8Array([...data, crc[0], crc[1]]);
     }
 
+    // 制御コマンドを生成（Start/Stop）
     static createControlCommand(isOn) {
-        const data = new Uint8Array([
+        // 46001に0を書き込む
+        const writeZeroTo46001 = new Uint8Array([
             0x0B,       // スレーブアドレス
-            0x04,       // ファンクションコード
-            0x76, 0x6B, // リファレンス番号 30107
-            0x00, isOn ? 0x01 : 0x02  // 制御値（ON: 1, OFF: 2）
+            0x06,       // ファンクションコード (Write Single Register)
+            0xB3, 0xB0, // リファレンス番号 46001 (0xB3B0)
+            0x00, 0x00  // 値: 0
         ]);
-        const crc = this.calculateCRC(data, 6);
-        return new Uint8Array([...data, crc[0], crc[1]]);
+        const crc1 = this.calculateCRC(writeZeroTo46001, 6);
+        
+        // 46002に制御値を書き込む（Start:1, Stop:0）
+        const writeControlTo46002 = new Uint8Array([
+            0x0B,       // スレーブアドレス
+            0x06,       // ファンクションコード (Write Single Register)
+            0xB3, 0xB1, // リファレンス番号 46002 (0xB3B1)
+            0x00, isOn ? 0x01 : 0x00  // 値: Start=1, Stop=0
+        ]);
+        const crc2 = this.calculateCRC(writeControlTo46002, 6);
+
+        // 46001の値を読み取る
+        const read46001 = new Uint8Array([
+            0x0B,       // スレーブアドレス
+            0x03,       // ファンクションコード (Read Holding Registers)
+            0xB3, 0xB0, // リファレンス番号 46001
+            0x00, 0x01  // レジスタ数: 1
+        ]);
+        const crc3 = this.calculateCRC(read46001, 6);
+
+        // 46002の値を読み取る
+        const read46002 = new Uint8Array([
+            0x0B,       // スレーブアドレス
+            0x03,       // ファンクションコード (Read Holding Registers)
+            0xB3, 0xB1, // リファレンス番号 46002
+            0x00, 0x01  // レジスタ数: 1
+        ]);
+        const crc4 = this.calculateCRC(read46002, 6);
+
+        // すべてのコマンドを結合して返す
+        return {
+            write46001: new Uint8Array([...writeZeroTo46001, crc1[0], crc1[1]]),
+            write46002: new Uint8Array([...writeControlTo46002, crc2[0], crc2[1]]),
+            read46001: new Uint8Array([...read46001, crc3[0], crc3[1]]),
+            read46002: new Uint8Array([...read46002, crc4[0], crc4[1]])
+        };
     }
 }
