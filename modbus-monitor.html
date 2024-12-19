@@ -2,20 +2,21 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="origin-trial" content="AnlT7gRo/750gGKtoI/A3D2rL5yAQA9wISlLqHGE6vJQinPfk0HiIij5LhWs+iuB7mTeotXmEXkvdpOAC1YjAgAAAG97Im9yaWdpbiI6ImNocm9tZS1leHRlbnNpb246Ly9sampoamFha21uY2lib25uanBhb2dsYmhjamVvbGhrayIsImZlYXR1cmUiOiJJQ2Fubm90QmVsaWV2ZVlvdVdhc3RlZFlvdXJUaW1lRGVjb2RpbmdUaGlzIiwiZXhwaXJ5Ijo1NzI1NDA3OTk5fQ==">
     <title>Modbus RTU 温度モニター</title>
     <link rel="stylesheet" href="js/styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="./js/chart.min.js"></script>
+    
 </head>
 <body>
     <div class="main-container">
         <div class="control-container">
             <h2>Modbus RTU 温度モニター</h2>
             
+            <!-- 更新間隔設定 -->
             <div class="settings-container">
                 <label>
                     更新間隔 (秒):
-                    <input type="number" id="updateInterval" value="1" min="1" max="60">
+                    <input type="number" id="updateInterval" value="5" min="1" max="60">
                 </label>
                 <div style="margin-top: 10px;">
                     <button id="connectButton">接続</button>
@@ -23,6 +24,7 @@
                 </div>
             </div>
 
+            <!-- 運転モード設定 -->
             <div class="operation-mode">
                 <div class="mode-label">運転モード</div>
                 <div style="margin-top: 10px;">
@@ -30,6 +32,7 @@
                 </div>
             </div>
             
+            <!-- 温度制御設定 -->
             <div class="temperature-control">
                 <div class="temp-control-container">
                     <div class="temp-settings">
@@ -49,6 +52,7 @@
                 </div>
             </div>
 
+            <!-- タイマー制御設定 -->
             <div class="timer-control">
                 <label>
                     タイマー運転時間 (分):
@@ -66,11 +70,12 @@
                 <div class="timer-display" id="timerDisplay">残り時間: --:--</div>
             </div>
 
-
-            
+            <!-- ステータス表示 -->
             <div class="status" id="statusText"></div>
             <div class="debug-info" id="debugInfo"></div>
         </div>
+
+        <!-- グラフ表示 -->
         <div class="graph-container">
             <canvas id="temperatureChart"></canvas>
             <div class="value-display">
@@ -79,85 +84,145 @@
             </div>
         </div>
     </div>
+<script type="module">
+    import { ModbusCommands } from './js/modbus-commands.js';
+    import { ChartManager } from './js/modbus-chart.js';
+    import { TimerManager } from './js/modbus-timer.js';
 
-    <script type="module">
-        import { ModbusCommands } from './js/modbus-commands.js';
-        import { ChartManager } from './js/modbus-chart.js';
-        import { TimerManager } from './js/modbus-timer.js';
+    let port;
+    let keepReading = false;
+    let updateIntervalMs = 1000;
+    let chartManager;
+    let timerManager;
 
-        let port;
-        let keepReading = false;
-        let updateIntervalMs = 1000;
-        let chartManager;
-        let timerManager;
-        let isControlOn = false;
-
-        function showDebugInfo(message, data = null) {
-                const debugInfo = document.getElementById('debugInfo');
-                let debugText = message;
-                if (data) {
-                    debugText += '\nData: ' + bytesToHex(data);
-                }
-                debugInfo.textContent = debugText;
-                console.log(message, data); // コンソールにも出力
-            }
-
-        function bytesToHex(bytes) {
-                if (!(bytes instanceof Uint8Array)) {
-                    bytes = new Uint8Array(bytes);
-                }
-                return Array.from(bytes)
-                    .map(b => b.toString(16).padStart(2, '0').toUpperCase())
-                    .join(' ');
-            }
-
-        async function readWithTimeout(reader, length, timeout) {
-            return new Promise(async (resolve, reject) => {
-                const chunks = [];
-                let receivedLength = 0;
-                const timer = setTimeout(() => {
-                    reader.releaseLock();
-                    reject(new Error('タイムアウト'));
-                }, timeout);
-
-                try {
-                    while (receivedLength < length) {
-                        const {value, done} = await reader.read();
-                        if (done) break;
-                        chunks.push(...value);
-                        receivedLength += value.length;
-                        if (receivedLength >= length) break;
-                    }
-                    clearTimeout(timer);
-                    resolve(new Uint8Array(chunks));
-                } catch (error) {
-                    clearTimeout(timer);
-                    reject(error);
-                }
-            });
+    // デバッグ情報表示関数
+    function showDebugInfo(message, data = null) {
+        const debugInfo = document.getElementById('debugInfo');
+        let debugText = message;
+        if (data) {
+            debugText += '\nData: ' + bytesToHex(data);
         }
-
-        async function setTemperature(temp) {
+        debugInfo.textContent = debugText;
+        console.log(message, data);
+    }
+    // デバイスの状態をチェックする関数
+        async function checkDeviceStatus() {
             try {
-                const command = ModbusCommands.createSetTempCommand(temp);
-                const writer = port.writable.getWriter();
-                await writer.write(command);
+                // 46001（モード）の状態を確認
+                const mode46001 = ModbusCommands.createReadStatusCommand(46001);
+                let writer = port.writable.getWriter();
+                await writer.write(mode46001);
                 writer.releaseLock();
 
-                showDebugInfo('温度設定コマンド送信', command);
-                document.getElementById('statusText').textContent = 
-                    `温度設定完了: ${temp}℃`;
+                let reader = port.readable.getReader();
+                const response46001 = await readWithTimeout(reader, 7, 1000);
+                reader.releaseLock();
+
+                // 46002（運転状態）の確認
+                const mode46002 = ModbusCommands.createReadStatusCommand(46002);
+                writer = port.writable.getWriter();
+                await writer.write(mode46002);
+                writer.releaseLock();
+
+                reader = port.readable.getReader();
+                const response46002 = await readWithTimeout(reader, 7, 1000);
+                reader.releaseLock();
+
+                // ボタンの状態を更新
+                updateButtonStates(response46001[4], response46002[4]);
+
             } catch (error) {
-                console.error('温度設定エラー:', error);
-                showDebugInfo('温度設定エラー: ' + error.message);
+                console.error('状態チェックエラー:', error);
+                // エラーは上位で処理するためスロー
+                throw error;
             }
         }
 
+        // ボタンの状態を更新する関数
+        function updateButtonStates(modeState, controlState) {
+            // モードボタンの更新
+            const modeButton = document.getElementById('modeButton');
+            if (modeState === 0) {
+                modeButton.textContent = '定値運転中';
+                modeButton.classList.remove('mode-off');
+                modeButton.classList.add('mode-on');
+            }
+
+            // 運転ボタンの更新
+            const controlButton = document.getElementById('controlButton');
+            if (controlState === 1) {
+                controlButton.textContent = '運転\nON';
+                controlButton.classList.remove('control-off');
+                controlButton.classList.add('control-on');
+                document.getElementById('startTimer').disabled = false;
+            } else {
+                controlButton.textContent = '運転\nOFF';
+                controlButton.classList.remove('control-on');
+                controlButton.classList.add('control-off');
+                document.getElementById('startTimer').disabled = true;
+                document.getElementById('stopTimer').disabled = true;
+            }
+        }
+    // バイト配列を16進数文字列に変換
+    function bytesToHex(bytes) {
+        if (!(bytes instanceof Uint8Array)) {
+            bytes = new Uint8Array(bytes);
+        }
+        return Array.from(bytes)
+            .map(b => b.toString(16).padStart(2, '0').toUpperCase())
+            .join(' ');
+    }
+
+    // タイムアウト付きリーダー
+    async function readWithTimeout(reader, length, timeout) {
+        return new Promise(async (resolve, reject) => {
+            const chunks = [];
+            let receivedLength = 0;
+            const timer = setTimeout(() => {
+                reader.releaseLock();
+                reject(new Error('タイムアウト'));
+            }, timeout);
+
+            try {
+                while (receivedLength < length) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    chunks.push(...value);
+                    receivedLength += value.length;
+                    if (receivedLength >= length) break;
+                }
+                clearTimeout(timer);
+                resolve(new Uint8Array(chunks));
+            } catch (error) {
+                clearTimeout(timer);
+                reject(error);
+            }
+        });
+    }
+    // 温度設定関数
+    async function setTemperature(temp) {
+        try {
+            const command = ModbusCommands.createSetTempCommand(temp);
+            const writer = port.writable.getWriter();
+            await writer.write(command);
+            writer.releaseLock();
+
+            showDebugInfo('温度設定コマンド送信', command);
+            document.getElementById('statusText').textContent =
+                `温度設定完了: ${temp}℃`;
+        } catch (error) {
+            console.error('温度設定エラー:', error);
+            showDebugInfo('温度設定エラー: ' + error.message);
+        }
+    }
+
+    // 継続的な読み取り処理
+    // 継続的な読み取り処理
         async function startReading() {
             keepReading = true;
             while (keepReading) {
                 try {
-                    // 温度読み取り
+                    // 現在温度読み取り
                     const tempCommand = ModbusCommands.createReadTempCommand();
                     let writer = port.writable.getWriter();
                     await writer.write(tempCommand);
@@ -171,12 +236,15 @@
                         const temp = (response[3] << 8) | response[4];
                         const dp = (response[5] << 8) | response[6];
                         const displayTemp = dp === 1 ? temp / 10 : temp;
-                        document.getElementById('temperatureValue').textContent = 
-                            displayTemp.toFixed(dp);
-                        chartManager.updateChart(displayTemp);
+                        document.getElementById('temperatureValue').textContent =
+                            displayTemp.toFixed(dp === 1 ? 1 : 0);
+                        chartManager.updateChart(displayTemp); // グラフ更新を確実に行う
                     }
 
-                    // 設定値読み取り
+                    // 少し待機
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    // 設定温度読み取り
                     const setpointCommand = ModbusCommands.createReadSetpointCommand();
                     writer = port.writable.getWriter();
                     await writer.write(setpointCommand);
@@ -191,49 +259,135 @@
                         document.getElementById('setpointValue').textContent = setpoint.toFixed(1);
                     }
 
+                    // デバイスの状態をチェック（エラーが発生しても継続）
+                    try {
+                        await checkDeviceStatus();
+                    } catch (error) {
+                        console.error('状態チェックエラー:', error);
+                    }
+
                     document.getElementById('statusText').textContent = '通信OK';
                     await new Promise(resolve => setTimeout(resolve, updateIntervalMs));
+
                 } catch (error) {
                     console.error('読み取りエラー:', error);
                     showDebugInfo('読み取りエラー: ' + error.message);
-                    keepReading = false;
+
+                    // エラー時は少し待ってから再試行
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    // 致命的なエラーの場合のみ停止
+                    if (error.message === 'Port is not open' ||
+                        error.message === 'Device disconnected' ||
+                        error.message === 'The port is already open') {
+                        keepReading = false;
+                    }
+                    // それ以外のエラーは継続
+                    continue;
                 }
             }
         }
+    // ポート接続処理
+    async function connectToPort() {
+        try {
+            port = await navigator.serial.requestPort();
+            await port.open({
+                baudRate: 9600,
+                dataBits: 8,
+                stopBits: 1,
+                parity: 'none',
+            });
 
-        async function connectToPort() {
+            document.getElementById('statusText').textContent = '接続成功';
+            document.getElementById('connectButton').textContent = '切断';
+            document.getElementById('applySettings').disabled = false;
+            document.getElementById('setTemp').disabled = false;
+            document.getElementById('return25').disabled = false;
+            document.getElementById('modeButton').disabled = false;
+            document.getElementById('controlButton').disabled = false;
+
+            await readInitialState();
+            startReading();
+        } catch (error) {
+            console.error('接続エラー:', error);
+            document.getElementById('statusText').textContent = 'エラー: ' + error.message;
+        }
+    }
+    // 初期状態読み取り
+        async function readInitialState() {
             try {
-                port = await navigator.serial.requestPort();
-                await port.open({
-                    baudRate: 9600,
-                    dataBits: 8,
-                    stopBits: 1,
-                    parity: 'none',
-                });
+                // 46001（モード）読み取り
+                const read46001 = new Uint8Array([
+                    0x0B, 0x03, 0x17, 0x70, 0x00, 0x01,
+                    0xCD, 0x0F // CRC
+                ]);
 
-                document.getElementById('statusText').textContent = '接続成功';
-                document.getElementById('connectButton').textContent = '切断';
-                document.getElementById('applySettings').disabled = false;
-                document.getElementById('setTemp').disabled = false;
-                document.getElementById('return25').disabled = false;
-                document.getElementById('startTimer').disabled = false;
-                
-                startReading();
+                let writer = port.writable.getWriter();
+                await writer.write(read46001);
+                writer.releaseLock();
+
+                let reader = port.readable.getReader();
+                const response46001 = await readWithTimeout(reader, 7, 1000);
+                reader.releaseLock();
+
+                // モードボタン状態更新
+                const mode = response46001[4];
+                const modeButton = document.getElementById('modeButton');
+                modeButton.textContent = mode === 0 ? '定値運転中' : '定値運転\nモード\nON';
+                modeButton.classList.remove('mode-off');
+                modeButton.classList.add('mode-on');
+
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // 46002（制御）読み取り
+                const read46002 = new Uint8Array([
+                    0x0B, 0x03, 0x17, 0x71, 0x00, 0x01,
+                    0x9C, 0xCF // CRC
+                ]);
+
+                writer = port.writable.getWriter();
+                await writer.write(read46002);
+                writer.releaseLock();
+
+                reader = port.readable.getReader();
+                const response46002 = await readWithTimeout(reader, 7, 1000);
+                reader.releaseLock();
+
+                // 制御ボタン状態更新
+                const control = response46002[4];
+                const controlButton = document.getElementById('controlButton');
+                if (control === 1) {
+                    controlButton.textContent = '運転\nON';
+                    controlButton.classList.remove('control-off');
+                    controlButton.classList.add('control-on');
+                    document.getElementById('startTimer').disabled = false;
+                } else {
+                    controlButton.textContent = '運転\nOFF';
+                    controlButton.classList.remove('control-on');
+                    controlButton.classList.add('control-off');
+                    document.getElementById('startTimer').disabled = true;
+                }
+
+                showDebugInfo('初期状態読み取り完了',
+                    `46001: ${bytesToHex(response46001)}\n` +
+                    `46002: ${bytesToHex(response46002)}`);
+
             } catch (error) {
-                console.error('接続エラー:', error);
-                document.getElementById('statusText').textContent = 'エラー: ' + error.message;
+                console.error('初期状態読み取りエラー:', error);
+                showDebugInfo('初期状態読み取りエラー: ' + error.message);
             }
         }
 
-        // 初期化
+        // DOMContentLoaded イベントハンドラ
         document.addEventListener('DOMContentLoaded', () => {
+            // 初期化
             chartManager = new ChartManager('temperatureChart');
             timerManager = new TimerManager(
                 document.getElementById('timerDisplay'),
                 setTemperature
             );
 
-            // 接続ボタン
+            // 接続ボタンイベント
             document.getElementById('connectButton').addEventListener('click', async () => {
                 if (!port) {
                     await connectToPort();
@@ -251,11 +405,13 @@
                     document.getElementById('return25').disabled = true;
                     document.getElementById('startTimer').disabled = true;
                     document.getElementById('stopTimer').disabled = true;
+                    document.getElementById('modeButton').disabled = true;
+                    document.getElementById('controlButton').disabled = true;
                     chartManager.clear();
                 }
             });
 
-            // 設定適用ボタン
+            // 設定適用ボタンイベント
             document.getElementById('applySettings').addEventListener('click', () => {
                 const intervalInput = document.getElementById('updateInterval');
                 const newInterval = Math.max(1, Math.min(60, parseInt(intervalInput.value) || 1));
@@ -263,11 +419,11 @@
                 updateIntervalMs = newInterval * 1000;
                 chartManager.setMaxPoints(Math.floor(3600 / newInterval));
 
-                document.getElementById('statusText').textContent = 
+                document.getElementById('statusText').textContent =
                     `設定を更新しました（更新間隔: ${newInterval}秒, 表示期間: 60分）`;
             });
 
-            // 温度設定ボタン
+            // 温度設定ボタンイベント
             document.getElementById('setTemp').addEventListener('click', () => {
                 const temp = parseFloat(document.getElementById('tempSetpoint').value);
                 if (!isNaN(temp) && temp >= 0 && temp <= 60) {
@@ -277,65 +433,72 @@
                 }
             });
 
-            // 25℃復帰ボタン
+            // 25℃復帰ボタンイベント
             document.getElementById('return25').addEventListener('click', () => {
                 setTemperature(25.0);
                 document.getElementById('tempSetpoint').value = '25.0';
             });
 
-            // モード設定ボタン（46001）のイベントリスナー
-            document.getElementById('modeButton').addEventListener('click', async () => {
-                let writer = null;
-                let reader = null;
+            // タイマー開始ボタンイベント
+            document.getElementById('startTimer').addEventListener('click', () => {
+                const duration = parseInt(document.getElementById('timerDuration').value);
+                const targetTemp = parseFloat(document.getElementById('timerTemp').value);
 
+                if (timerManager.startTimer(duration, targetTemp)) {
+                    document.getElementById('stopTimer').disabled = false;
+                    document.getElementById('startTimer').disabled = true;
+                }
+            });
+
+            // タイマー停止ボタンイベント
+            document.getElementById('stopTimer').addEventListener('click', () => {
+                timerManager.stopTimer();
+                document.getElementById('stopTimer').disabled = true;
+                document.getElementById('startTimer').disabled = false;
+            });
+            // DOMContentLoadedイベントハンドラ内に以下を追加
+
+            // モードボタンのイベントハンドラ
+            document.getElementById('modeButton').addEventListener('click', async () => {
                 try {
-                    // 46001に0を書き込む
-                    const data = new Uint8Array([
+                    // 46001に0を書き込む（定値運転モード設定）
+                    const modeCommand = new Uint8Array([
                         0x0B,       // スレーブアドレス
                         0x06,       // ファンクションコード
                         0x17, 0x70, // レジスタアドレス (46001)
-                        0x00, 0x00, // 値: 0
+                        0x00, 0x00, // 値: 0（定値運転モード）
                         0x8D, 0x0F  // CRC
                     ]);
 
-                    writer = port.writable.getWriter();
-                    await writer.write(data);
+                    const writer = port.writable.getWriter();
+                    await writer.write(modeCommand);
                     writer.releaseLock();
 
-                    // 書き込みレスポンスを読み取る
-                    reader = port.readable.getReader();
+                    // 応答を読み取る
+                    const reader = port.readable.getReader();
                     const response = await readWithTimeout(reader, 8, 1000);
                     reader.releaseLock();
 
                     if (response[0] === 0x0B && response[1] === 0x06) {
                         const button = document.getElementById('modeButton');
-                        button.textContent = '定値運転\nモード\nON';
+                        button.textContent = '定値運転中';
                         button.classList.remove('mode-off');
                         button.classList.add('mode-on');
-
-                        // 制御ボタンを有効化
                         document.getElementById('controlButton').disabled = false;
                     }
 
-                    showDebugInfo('モード設定コマンド送信', bytesToHex(response));
-
+                    showDebugInfo('モード設定完了', response);
                 } catch (error) {
                     console.error('モード設定エラー:', error);
                     showDebugInfo('モード設定エラー: ' + error.message);
-                } finally {
-                    if (writer && !writer.closed) writer.releaseLock();
-                    if (reader && !reader.closed) reader.releaseLock();
                 }
             });
 
-            // 制御ボタン（46002）のイベントリスナー
+            // 制御（運転）ボタンのイベントハンドラ
             document.getElementById('controlButton').addEventListener('click', async () => {
-                let writer = null;
-                let reader = null;
-
                 try {
                     const isOn = !document.getElementById('controlButton').classList.contains('control-on');
-                    const data = new Uint8Array([
+                    const controlCommand = new Uint8Array([
                         0x0B,       // スレーブアドレス
                         0x06,       // ファンクションコード
                         0x17, 0x71, // レジスタアドレス (46002)
@@ -343,11 +506,11 @@
                         isOn ? 0x1D : 0xDC, isOn ? 0x0F : 0xCF  // CRC
                     ]);
 
-                    writer = port.writable.getWriter();
-                    await writer.write(data);
+                    const writer = port.writable.getWriter();
+                    await writer.write(controlCommand);
                     writer.releaseLock();
 
-                    reader = port.readable.getReader();
+                    const reader = port.readable.getReader();
                     const response = await readWithTimeout(reader, 8, 1000);
                     reader.releaseLock();
 
@@ -357,146 +520,30 @@
                             button.textContent = '運転\nON';
                             button.classList.remove('control-off');
                             button.classList.add('control-on');
+                            // 運転ON時にタイマーボタンを有効化
+                            document.getElementById('startTimer').disabled = false;
                         } else {
                             button.textContent = '運転\nOFF';
                             button.classList.remove('control-on');
                             button.classList.add('control-off');
+                            // 運転OFF時にタイマー関連ボタンを無効化
+                            document.getElementById('startTimer').disabled = true;
+                            document.getElementById('stopTimer').disabled = true;
+                            // タイマーが実行中なら停止
+                            if (timerManager.isRunning()) {
+                                timerManager.stopTimer();
+                            }
                         }
                     }
 
-                    showDebugInfo('制御コマンド送信', bytesToHex(response));
-
+                    showDebugInfo('運転制御設定完了', response);
                 } catch (error) {
-                    console.error('制御エラー:', error);
-                    showDebugInfo('制御エラー: ' + error.message);
-                } finally {
-                    if (writer && !writer.closed) writer.releaseLock();
-                    if (reader && !reader.closed) reader.releaseLock();
+                    console.error('運転制御エラー:', error);
+                    showDebugInfo('運転制御エラー: ' + error.message);
                 }
-            });
-
-            // 初期状態読み取り関数
-            async function readInitialState() {
-                try {
-                    // 46001の読み取り
-                    const read46001 = new Uint8Array([
-                        0x0B,       // スレーブアドレス
-                        0x03,       // ファンクションコード (Read Holding Registers)
-                        0x17, 0x70, // レジスタアドレス (46001)
-                        0x00, 0x01  // レジスタ数: 1
-                    ]);
-                    const crc1 = calculateCRC(read46001.slice(0, 6));
-                    const command46001 = new Uint8Array([...read46001, crc1[0], crc1[1]]);
-
-                    let writer = port.writable.getWriter();
-                    await writer.write(command46001);
-                    writer.releaseLock();
-
-                    let reader = port.readable.getReader();
-                    const response46001 = await readWithTimeout(reader, 7, 1000);
-                    reader.releaseLock();
-
-                    // 46001の値に基づいてボタン表示を設定
-                    const mode = response46001[4]; // 下位バイトの値
-                    const modeButton = document.getElementById('modeButton');
-                    if (mode === 0) {
-                        modeButton.textContent = '定値運転中';
-                    } else {
-                        modeButton.textContent = '定値運転\nモード\nON';
-                    }
-                    modeButton.classList.remove('mode-off');
-                    modeButton.classList.add('mode-on');
-
-                    await new Promise(resolve => setTimeout(resolve, 100)); // 少し待機
-
-                    // 46002の読み取り
-                    const read46002 = new Uint8Array([
-                        0x0B,       // スレーブアドレス
-                        0x03,       // ファンクションコード (Read Holding Registers)
-                        0x17, 0x71, // レジスタアドレス (46002)
-                        0x00, 0x01  // レジスタ数: 1
-                    ]);
-                    const crc2 = calculateCRC(read46002.slice(0, 6));
-                    const command46002 = new Uint8Array([...read46002, crc2[0], crc2[1]]);
-
-                    writer = port.writable.getWriter();
-                    await writer.write(command46002);
-                    writer.releaseLock();
-
-                    reader = port.readable.getReader();
-                    const response46002 = await readWithTimeout(reader, 7, 1000);
-                    reader.releaseLock();
-
-                    // 46002の値に基づいてボタン表示を設定
-                    const control = response46002[4]; // 下位バイトの値
-                    const controlButton = document.getElementById('controlButton');
-                    if (control === 0) {
-                        controlButton.textContent = '運転\nON';
-                        controlButton.classList.remove('control-off');
-                        controlButton.classList.add('control-on');
-                    } else {
-                        controlButton.textContent = '運転\nOFF';
-                        controlButton.classList.remove('control-on');
-                        controlButton.classList.add('control-off');
-                    }
-
-                    showDebugInfo('初期状態読み取り完了',
-                        `46001: ${bytesToHex(response46001)}\n` +
-                        `46002: ${bytesToHex(response46002)}`);
-
-                } catch (error) {
-                    console.error('初期状態読み取りエラー:', error);
-                    showDebugInfo('初期状態読み取りエラー: ' + error.message);
-                }
-            }
-
-            // connectToPort 関数内の成功時の処理を修正
-            async function connectToPort() {
-                try {
-                    port = await navigator.serial.requestPort();
-                    await port.open({
-                        baudRate: 9600,
-                        dataBits: 8,
-                        stopBits: 1,
-                        parity: 'none',
-                    });
-
-                    document.getElementById('statusText').textContent = '接続成功';
-                    document.getElementById('connectButton').textContent = '切断';
-                    document.getElementById('applySettings').disabled = false;
-                    document.getElementById('setTemp').disabled = false;
-                    document.getElementById('return25').disabled = false;
-                    document.getElementById('modeButton').disabled = false;
-                    document.getElementById('controlButton').disabled = false;
-
-                    // 初期状態の読み取り
-                    await readInitialState();
-
-                    startReading();
-                } catch (error) {
-                    console.error('接続エラー:', error);
-                    document.getElementById('statusText').textContent = 'エラー: ' + error.message;
-                }
-            }
-
-            // タイマー開始ボタン
-            document.getElementById('startTimer').addEventListener('click', () => {
-                const duration = parseInt(document.getElementById('timerDuration').value);
-                const targetTemp = parseFloat(document.getElementById('timerTemp').value);
-                
-                if (timerManager.startTimer(duration, targetTemp)) {
-                    document.getElementById('stopTimer').disabled = false;
-                    document.getElementById('startTimer').disabled = true;
-                }
-            });
-
-            // タイマー停止ボタン
-            document.getElementById('stopTimer').addEventListener('click', () => {
-                timerManager.stopTimer();
-                document.getElementById('stopTimer').disabled = true;
-                document.getElementById('startTimer').disabled = false;
             });
         });
     </script>
-</body>
-</html>
+    </body>
+    
+    </html>
