@@ -16,6 +16,7 @@ body {
 }
 .graph-container {
     flex: 2;
+    height: 500px;
     border: 1px solid #ccc;
     padding: 20px;
     border-radius: 5px;
@@ -37,7 +38,7 @@ body {
 }
 .value-display {
     font-size: 24px;
-    margin: 20px 0;
+    margin: 50px 0;
     padding: 10px;
     background-color: #f0f0f0;
     border-radius: 5px;
