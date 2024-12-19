@@ -25,6 +25,11 @@ export class ChartManager {
                         title: {
                             display: true,
                             text: '時間'
+                        },
+                        ticks: {
+                            maxTicksLimit: 12,  // 横軸の目盛りを最大15本に制限
+                            source: 'auto',
+                            autoSkip: true
                         }
                     },
                     y: {
@@ -45,8 +50,8 @@ export class ChartManager {
     updateChart(temperature) {
         const now = new Date();
         const timeString = now.getHours().toString().padStart(2, '0') + ':' +
-                          now.getMinutes().toString().padStart(2, '0') + ':' +
-                          now.getSeconds().toString().padStart(2, '0');
+            now.getMinutes().toString().padStart(2, '0') + ':' +
+            now.getSeconds().toString().padStart(2, '0');
 
         this.temperatureData.push({
             time: timeString,
