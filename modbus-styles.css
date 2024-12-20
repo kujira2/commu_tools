@@ -1,0 +1,125 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.comm-panel {
+    background-color: #f0f0f0;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.comm-settings {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.setting-item label {
+    font-weight: bold;
+}
+
+.setting-item select {
+    padding: 5px;
+    border-radius: 3px;
+    border: 1px solid #ddd;
+}
+
+.connect-button {
+    padding: 8px 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.connect-button:hover {
+    background-color: #45a049;
+}
+
+.status-text {
+    color: #666;
+    margin-left: 10px;
+}
+
+.status-panel {
+    background-color: #f5f5f5;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.status-item {
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: white;
+    border-radius: 3px;
+    border: 1px solid #ddd;
+}
+
+.status-label {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.control-panel {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.test-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.test-button:hover {
+    background-color: #45a049;
+}
+
+.test-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.chart-container {
+    width: 100%;
+    height: 400px;
+    margin-top: 20px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 5px;
+}
+.stop-button {
+    background-color: #f44336;
+    margin-left: 10px;
+}
+
+.stop-button:hover {
+    background-color: #da190b;
+}
+
+.stop-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
