@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="print-color-adjust" content="exact">
     <title>8700 Modbus確認用</title>
-    <link rel="stylesheet" href="modbus-styles.css">
+    <link rel="stylesheet" href="js/modbus-styles_8700.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -79,9 +79,9 @@
     </div>
 
     <script type="module">
-        import { ModbusCommands } from './modbus-commands.js';
-        import { SerialConnection } from './serial-connection.js';
-        import { FlowChartManager } from './flow-chart.js';
+        import { ModbusCommands } from './js/modbus-commands_8700.js';
+        import { SerialConnection } from './js/serial-connection_8700.js';
+        import { FlowChartManager } from './js/flow-chart_8700.js';
 
         class ModbusMonitor {
                  constructor() {
