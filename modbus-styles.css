@@ -140,3 +140,97 @@ h1 {
 .log-entry.send { color: #0066cc; }
 .log-entry.receive { color: #006600; }
 .log-entry.error { color: #cc0000; }
+
+
+/* 印刷用スタイル - 横向き */
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 10mm;
+    }
+
+    .container {
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+        width: 100%;
+    }
+
+    body {
+        font-size: 11pt;
+    }
+
+    h1 {
+        margin-bottom: 10px;
+    }
+
+    /* 上部のコントロールパネル調整 */
+    .comm-panel {
+        padding: 8px;
+        margin-bottom: 5px;
+    }
+
+    .test-button-container {
+        padding: 8px;
+    }
+
+    /* メインコンテンツエリアの調整 */
+    .main-content {
+        gap: 5px;
+        page-break-inside: avoid;
+        margin-bottom: 5px;
+    }
+
+    /* ステータスパネルの調整 */
+    .status-panel {
+        width: 250px;  /* 幅を少し縮小 */
+        padding: 10px;
+    }
+
+    .status-item {
+        margin-bottom: 5px;
+        padding: 5px;
+    }
+
+    /* グラフエリアの調整 */
+    .right-content {
+        width: calc(100% - 270px);  /* status-panelの幅+余白を考慮 */
+    }
+
+    .chart-container {
+        height: 200px;  /* 高さを調整 */
+        padding: 10px;
+    }
+
+    /* コマンドログの調整 */
+    .command-history {
+        margin-top: 5px;
+    }
+
+    .command-log {
+        height: 120px;
+        overflow: visible;
+        padding: 5px;
+    }
+
+    /* 背景色印刷の設定 */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* ボタンのスタイル調整 */
+    .connect-button, .test-button {
+        border: 1px solid #666;
+    }
+
+    /* フォントサイズの微調整 */
+    .status-label, .status-text {
+        font-size: 10pt;
+    }
+
+    .log-entry {
+        font-size: 9pt;
+        margin: 2px 0;
+    }
+}
