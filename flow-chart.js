@@ -42,6 +42,9 @@ export class FlowChartManager {
                             text: '出力モニター（20%F.S.刻みで10s間）'
                         }
                     },
+                        legend: {
+                            display: false  // 凡例を非表示に設定
+                        }
                     scales: {
                         x: {
                             type: 'linear',
