@@ -39,7 +39,7 @@ export class FlowChartManager {
                     plugins: {
                         title: {
                             display: true,
-                            text: '流量モニタ'
+                            text: '出力モニター（20%F.S.刻みで10s間）'
                         }
                     },
                     scales: {
@@ -115,7 +115,7 @@ export class FlowChartManager {
     async setYAxisUnit(unit) {
         if (!this.chartInitialized || !this.chart) return;
 
-        this.chart.options.scales.y.title.text = `流量 (${unit})`;
+        this.chart.options.scales.y.title.text = `流量`;
         this.chart.update('none');
     }
 
