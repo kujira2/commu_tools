@@ -6,67 +6,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>8700 Modbus確認用</title>
     <link rel="stylesheet" href="modbus-styles.css">
-    <!-- Chart.jsの読み込みを修正 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>8700 Modbus確認用</h1>
+        <h1>8700MCシリーズModbus仕様確認プログラム</h1>
 
-        <div class="comm-panel">
-            <div class="comm-settings">
-                <div class="setting-item">
-                    <label for="baudRate">通信速度:</label>
-                    <select id="baudRate">
-                        <option value="9600">9600 bps</option>
-                        <option value="19200">19200 bps</option>
-                    </select>
+        <div class="top-controls">
+            <div class="comm-panel">
+                <div class="comm-settings">
+                    <div class="setting-item">
+                        <label for="baudRate">通信速度:</label>
+                        <select id="baudRate">
+                            <option value="9600">9600 bps</option>
+                            <option value="19200">19200 bps</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="parity">パリティ:</label>
+                        <select id="parity">
+                            <option value="none">なし (None)</option>
+                            <option value="even">偶数 (Even)</option>
+                            <option value="odd">奇数 (Odd)</option>
+                        </select>
+                    </div>
+                    <button id="connectButton" class="connect-button">接続</button>
+                    <span id="connectionStatus" class="status-text">未接続</span>
                 </div>
-                <div class="setting-item">
-                    <label for="parity">パリティ:</label>
-                    <select id="parity">
-                        <option value="none">なし (None)</option>
-                        <option value="even">偶数 (Even)</option>
-                        <option value="odd">奇数 (Odd)</option>
-                    </select>
+            </div>
+            <div class="test-button-container">
+                <button id="startTest" class="test-button" disabled>流量検査開始</button>
+            </div>
+        </div>
+    
+        <div class="main-content">
+            <div class="status-panel">
+                <div class="status-item">
+                    <span class="status-label">RUNキー状態:</span>
+                    <span id="runKeyStatus">読み込み中...</span>
                 </div>
-                <button id="connectButton" class="connect-button">接続</button>
-                <span id="connectionStatus" class="status-text">未接続</span>
+                <div class="status-item">
+                    <span class="status-label">設定モード:</span>
+                    <span id="settingMode">読み込み中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">オートゼロ状態:</span>
+                    <span id="autoZeroStatus">読み込み中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">0-2%表示設定:</span>
+                    <span id="displayMode">読み込み中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">流量レンジ:</span>
+                    <span id="flowRange">読み込み中...</span>
+                </div>
+            </div>
+    
+            <div class="right-content">
+                <div class="chart-container">
+                    <canvas id="flowChart"></canvas>
+                </div>
             </div>
         </div>
-
-        <div class="status-panel">
-            <div class="status-item">
-                <span class="status-label">RUNキー状態:</span>
-                <span id="runKeyStatus">読み込み中...</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">設定モード:</span>
-                <span id="settingMode">読み込み中...</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">オートゼロ状態:</span>
-                <span id="autoZeroStatus">読み込み中...</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">0-2%表示設定:</span>
-                <span id="displayMode">読み込み中...</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">流量レンジ:</span>
-                <span id="flowRange">読み込み中...</span>
-            </div>
-            
-         <div class="chart-container">
-            <canvas id="flowChart"></canvas>
-        </div>
-        </div>
-
-        <div class="control-panel">
-            <button id="startTest" class="test-button" disabled>流量検査開始</button>
-        </div>
-
-        <!-- コマンド履歴エリアを追加（chart-containerの前に配置） -->
+    
         <div class="command-history">
             <h3>通信履歴</h3>
             <div id="commandLog" class="command-log"></div>
@@ -91,7 +94,6 @@
                 this.commandLog = document.getElementById('commandLog');
             }
 
-                // ログエントリを追加するメソッド
                 addLogEntry(type, data, description = '') {
                     const now = new Date();
                     const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now.getMilliseconds().toString().padStart(3, '0')}`;
@@ -123,13 +125,12 @@
                 }
 
                 async initialize() {
-                // グラフの初期化を追加
+
                 try {
-            console.log('Initializing ModbusMonitor...');
-            // Chart.jsの読み込みを確認
-            if (typeof Chart === 'undefined') {
-                console.error('Chart.js is not loaded');
-                throw new Error('Chart.js is not loaded');
+            　　　　　onsole.log('Initializing ModbusMonitor...');
+            　　　　　if (typeof Chart === 'undefined') {
+                　　　console.error('Chart.js is not loaded');
+                　　　throw new Error('Chart.js is not loaded');
             }
             
             // グラフの初期化
@@ -139,9 +140,8 @@
             this.setupEventListeners();
             
             console.log('ModbusMonitor initialized successfully');
-        } catch (error) {
+        } 　catch (error) {
             console.error('ModbusMonitor initialization error:', error);
-            // エラーメッセージを画面に表示
             const errorDiv = document.createElement('div');
             errorDiv.style.color = 'red';
             errorDiv.textContent = `初期化エラー: ${error.message}`;
@@ -167,7 +167,7 @@
                         return;
                     }
 
-                    // レスポンスの解析（Modbusレスポンスフォーマット: [アドレス, ファンクション, バイト数, データ上位, データ下位, CRC下位, CRC上位]）
+                    // レスポンスの解析
                     const range = (rangeResponse[3] << 8) | rangeResponse[4];  // 40028の値
                     const decimalPoint = (decimalResponse[3] << 8) | decimalResponse[4];  // 40009の値
 
@@ -176,15 +176,13 @@
 
                     // 小数点を考慮した値の計算
                     const adjustedRange = (range / Math.pow(10, decimalPoint)).toFixed(decimalPoint);
-
-                    // 画面表示の更新（小数点込みの値）
                     document.getElementById('flowRange').textContent = adjustedRange;
 
                     // グラフの設定更新
                     this.chartManager.setMaxRange(adjustedRange); 
 
                     console.log(`Flow range: ${adjustedRange} (Raw: ${range}, DP: ${decimalPoint})`);
-                } catch (error) {
+                }　 catch (error) {
                     console.error('Error determining flow parameters:', error);
                     document.getElementById('flowRange').textContent = 'エラー';
                     this.addErrorLog(error);
@@ -220,8 +218,8 @@
                     const flowValue = (response[3] << 8) | response[4];
                     // 小数点位置に応じて流量値を調整
                     const adjustedFlow = this.adjustFlowValueByDecimalPoint(flowValue);
-                    await this.chartManager.updateChart(adjustedFlow);  // awaitを追加
-                    console.log(`Current flow value: ${adjustedFlow}`);  // デバッグ用ログ
+                    await this.chartManager.updateChart(adjustedFlow);  
+                    console.log(`Current flow value: ${adjustedFlow}`); 
                 }
             }
                 setupEventListeners() {
@@ -238,7 +236,7 @@
                                 await this.sleep(500);
                                 await this.determineFlowUnit();
                                 await this.updateCoilStatus();
-                                await this.chartManager.startNewTest();  // グラフをリセット
+                                await this.chartManager.startNewTest();
                                 this.startPeriodicUpdate();
                             }
                         } else {
@@ -281,7 +279,7 @@
                     // maxRangeの20%刻みで設定値を計算
                     const steps = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
                     const setPoints = steps.map(step => Math.floor(this.maxRange * step));
-                    console.log('Set points:', setPoints); // デバッグ用
+                    console.log('Set points:', setPoints); 
 
                     const readInterval = 500; // 0.5秒間隔でデータ読み取り
                     const totalDuration = 70000; // 70秒
@@ -289,7 +287,7 @@
 
                     for (const setValue of setPoints) {
                         // 40022に流量設定値を書き込み
-                        console.log('Setting flow rate to:', setValue); // デバッグ用
+                        console.log('Setting flow rate to:', setValue); 
                         await this.serialConnection.sendCommand(
                             ModbusCommands.createWriteFlowRateSetpoint(setValue)
                         );
