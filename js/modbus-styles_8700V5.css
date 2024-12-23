@@ -137,6 +137,10 @@ h1 {
     border-bottom: 1px solid #eee;
 }
 
+.log-entry.send { color: #0066cc; }
+.log-entry.receive { color: #006600; }
+.log-entry.error { color: #cc0000; }
+
 .totalizer-button {
     width: 100%;
     padding: 8px;
@@ -152,11 +156,6 @@ h1 {
     color: white;
     border-color: #4CAF50;
 }
-
-.log-entry.send { color: #0066cc; }
-.log-entry.receive { color: #006600; }
-.log-entry.error { color: #cc0000; }
-
 
 
 
