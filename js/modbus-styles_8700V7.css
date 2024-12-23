@@ -230,8 +230,8 @@ h1 {
      /* グラフ用のキャンバス要素のスタイルを追加 */
     .chart-container canvas {
         position: absolute !important;  /* 追加 */
-        height: 100% !important;  /* 追加 */
-        width: 100% !important;  /* 追加 */
+        height: 90% !important;  /* 追加 */
+        width: 90% !important;  /* 追加 */
     }
 
     /* コマンドログの調整 */
