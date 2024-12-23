@@ -81,7 +81,7 @@ h1 {
     border: 1px solid #ddd;
     border-radius: 5px;
     padding: 15px;
-    height: 350px;
+    height: 400px;
 }
 
 .command-log {
@@ -137,6 +137,7 @@ h1 {
     border-bottom: 1px solid #eee;
 }
 
+
 .log-entry.send { color: #0066cc; }
 .log-entry.receive { color: #006600; }
 .log-entry.error { color: #cc0000; }
@@ -165,6 +166,10 @@ h1 {
         size: A4 landscape;
         margin: 10mm;
     }
+    /* 最初のページ以外を非表示にする */
+    .command-history {
+         display: none;
+         }
 
     .container {
         max-width: 100%;
@@ -212,11 +217,21 @@ h1 {
     /* グラフエリアの調整 */
     .right-content {
         width: calc(100% - 270px);  /* status-panelの幅+余白を考慮 */
+        height: 270px !important;
     }
 
     .chart-container {
-        height: 200px;  /* 高さを調整 */
+        position: relative;  /* 追加 */
+        height: 250px !important;  /* !important を追加 */
+        min-height: 250px !important;  /* 追加 */
         padding: 10px;
+        margin-bottom: 10px;  /* 追加 */
+    }
+     /* グラフ用のキャンバス要素のスタイルを追加 */
+    .chart-container canvas {
+        position: absolute !important;  /* 追加 */
+        height: 100% !important;  /* 追加 */
+        width: 100% !important;  /* 追加 */
     }
 
     /* コマンドログの調整 */
