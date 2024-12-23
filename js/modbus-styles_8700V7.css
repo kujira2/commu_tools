@@ -205,7 +205,7 @@ h1 {
 
     /* ステータスパネルの調整 */
     .status-panel {
-        width: 250px;  /* 幅を少し縮小 */
+        width: 300px;  /* 幅を少し縮小 */
         padding: 10px;
     }
 
@@ -222,8 +222,8 @@ h1 {
 
     .chart-container {
         position: relative;  /* 追加 */
-        height: 250px !important;  /* !important を追加 */
-        min-height: 250px !important;  /* 追加 */
+        height: 350px !important;  /* !important を追加 */
+        min-height: 350px !important;  /* 追加 */
         padding: 10px;
         margin-bottom: 10px;  /* 追加 */
     }
