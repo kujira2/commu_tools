@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>CR-400通信用ﾌﾟﾛｸﾞﾗﾑV3</title>
+    <link rel="stylesheet" href="cssjs/styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>CR-400通信用プログラム(設定&ﾓﾆﾀ―表示)</h1>
+
+        <div class="layout-grid">
+            <div class="left-panel">
+                <div class="connection-area">
+                    <button id="connectButton">接続</button>
+                    <button id="disconnectButton" disabled>切断</button>
+                    <span id="connectionStatus" class="status disconnected">Disconnected</span>
+                </div>
+
+                <div class="device-settings">
+                    <h2>デバイス設定</h2>
+                    <div class="device-id-settings">
+                        <div class="device-row">
+                            <label>設定器ID:</label>
+                            <input type="text" id="settingDeviceId" class="device-id-input" maxlength="3" value="1">
+                        </div>
+                        <div class="device-row">
+                            <label>表示器ID:</label>
+                            <input type="text" id="displayDeviceId" class="device-id-input" maxlength="3" value="2">
+                        </div>
+                        <button id="saveDeviceSettings">ID設定保存</button>
+                    </div>
+                </div>
+
+                <div class="display-area">
+                    <div>
+                        <p>CR-400設定器:</p>
+                        <p>FS設定値: <span id="id1-fullscale">--</span></p>
+                    </div>
+                    <div>
+                        <p>CR-400表示器:</p>
+                        <p>FS設定値:　<span id="id2-fullscale">--</span></p>
+                    </div>
+                </div>
+
+                <div class="control-panel">
+                    <div class="manual-control">
+                        <h2>手動流量設定[%]</h2>
+                        <div>
+                            <label>パーセンテージ (0-100.0): </label>
+                            <input type="number" id="percentInput" step="0.1" min="0" max="100.0">
+                            <button onclick="writeValue()" id="writeButton" disabled>流量設定</button>
+                        </div>
+                        <div class="update-control">
+                            <label>更新間隔 (s): </label>
+                            <input type="number" id="updateInterval" value="1" min="1" max="60">
+                            <button id="stopRecording" disabled>記録停止</button>
+                        </div>
+                    </div>
+
+                    <div class="auto-control">
+                        <h2>自動流量設定</h2>
+                        <div class="automation-table-container">
+                            <table id="automationTable">
+                                <thead>
+                                    <tr>
+                                        <th>設定値 (%)</th>
+                                        <th>時間 (秒)</th>
+                                        <th>設定器出力 (V)</th>
+                                        <th>表示器出力 (V)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><input type="text" class="percent-input" maxlength="6"></td>
+                                        <td><input type="text" class="time-input" maxlength="3"></td>
+                                        <td><input type="text" disabled></td>
+                                        <td><input type="text" disabled></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="automation-controls">
+                                <button id="addRow">行追加</button>
+                                <button id="startAutomation">開始</button>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div id="progress"></div>
+                                </div>
+                                <div id="progressText">0%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="controller-output">
+                        <label>
+                            <input type="checkbox" id="showControllerOutput"> 設定器出力を表示
+                        </label>
+                    </div>
+                    <div class="csv-export">
+                        <button id="exportCSV" disabled>CSVエクスポート</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="voltageChart"></canvas>
+            </div>
+            <div class="voltage-display">
+                <h2>出力電圧:</h2>
+                <div class="voltage-values">
+                    <div>設定器: <span id="currentVoltage1">0.000 [V]</span></div>
+                    <div>表示器: <span id="currentVoltage2">0.000 [V]</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="cssjs/connect.js"></script>
+    <script src="cssjs/command.js"></script>
+    <script src="cssjs/automation.js"></script>
+</body>
+</html>

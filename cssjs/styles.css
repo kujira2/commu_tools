@@ -1,0 +1,214 @@
+.manual-control,
+.auto-control {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.automation-table-container {
+    margin: 15px 0;
+    border: 1px solid #ccc;
+    padding: 1px;
+    background: #fff;
+}
+
+#automationTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+#automationTable th,
+#automationTable td {
+    border: 1px solid #ddd;
+    padding: 4px 8px;
+    height: 24px;
+}
+
+#automationTable th {
+    background-color: #f3f3f3;
+    font-weight: normal;
+    text-align: center;
+    border-bottom: 2px solid #ddd;
+    position: relative;
+}
+
+#automationTable td {
+    position: relative;
+}
+
+#automationTable tr:hover {
+    background-color: #f9f9f9;
+}
+
+#automationTable input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    padding: 2px 4px;
+    margin: 0;
+    box-sizing: border-box;
+    background: transparent;
+    font-size: 14px;
+    text-align: right;
+}
+
+#automationTable input:focus {
+    outline: none;
+    background-color: #fff;
+    box-shadow: inset 0 0 0 2px #1a73e8;
+}
+
+#automationTable input:disabled {
+    color: #666;
+    background-color: #f9f9f9;
+}
+
+/* Excel風のグリッドライン */
+#automationTable td::after,
+#automationTable th::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: #ddd;
+}
+
+#automationTable td::before,
+#automationTable th::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #ddd;
+}
+
+.automation-controls {
+    margin: 10px 0;
+    padding: 10px;
+    border-top: 1px solid #eee;
+}
+
+.automation-controls button {
+    margin-right: 10px;
+    padding: 6px 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    color: #3c4043;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.automation-controls button:hover {
+    background-color: #f1f3f4;
+    border-color: #dadce0;
+}
+
+.automation-controls button:active {
+    background-color: #e8eaed;
+}
+
+.progress-container {
+    margin-top: 15px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+#progress {
+    width: 0%;
+    height: 100%;
+    background-color: #4CAF50;
+    transition: width 0.5s;
+}
+
+#progressText {
+    text-align: center;
+    margin-top: 5px;
+}
+
+.voltage-values {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 10px;
+}
+
+.voltage-values div {
+    font-size: 1.2em;
+}
+
+.device-settings {
+    margin: 15px 0;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+.device-id-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.device-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.device-row label {
+    width: 80px;
+    font-size: 14px;
+}
+
+.device-id-input {
+    width: 60px;
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: right;
+    font-size: 14px;
+}
+
+.device-id-input:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+}
+
+#saveDeviceSettings {
+    margin-top: 10px;
+    padding: 6px 12px;
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#saveDeviceSettings:hover {
+    background-color: #1557b0;
+}
+
+#saveDeviceSettings:active {
+    background-color: #174ea6;
+}
+
+.status.connecting {
+    background-color: #FFA500;
+    color: white;
+}
