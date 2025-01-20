@@ -293,12 +293,12 @@
                     await this.sleep(1000);
 
                     // maxRangeの20%刻みで設定値を計算
-                    const steps = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+                    const steps = [0, 0.05,0.1,0.2, 0.4, 0.6, 0.8, 1.0];
                     const setPoints = steps.map(step => Math.floor(this.maxRange * step));
                     console.log('Set points:', setPoints); 
 
-                    const readInterval = 500; // 0.5秒間隔でデータ読み取り
-                    const totalDuration = 70000; // 70秒
+                    const readInterval = 200; // 0.5秒間隔でデータ読み取り
+                    const totalDuration = 120000; // 70秒
                     const samplesPerPoint = Math.floor(10000 / readInterval); // 各ポイントでのサンプル数
 
                     for (const setValue of setPoints) {
