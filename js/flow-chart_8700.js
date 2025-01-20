@@ -53,7 +53,7 @@ export class FlowChartManager {
                                 text: '経過時間 (秒)'
                             },
                             min: 0,
-                            max: 70
+                            max: 120
                         },
                         y: {
                             title: {
