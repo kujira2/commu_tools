@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RS485機器制御パネル</title>
+    <style>
+        /* Base styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Status styles */
+        .status-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .connected {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .disconnected {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        /* Device control section */
+        .device-controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .device-group {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .device-group.selected {
+            background-color: #e0ffe0;
+            border: 1px solid #90EE90;
+        }
+
+        .device-group:hover {
+            background-color: #f0fff0;
+        }
+
+        .device-group h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .device-group.non-selectable {
+            cursor: default;
+            background-color: #f8f9fa;
+        }
+
+        .device-group.non-selectable:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Checkbox container */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        /* Form elements */
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        input {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            width: calc(100% - 18px);
+            margin-bottom: 10px;
+        }
+
+        input:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
+        }
+
+        /* Measurement settings */
+        .measurement-settings {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .info-text {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+        }
+
+        /* Button styles */
+        .button-group {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        button.primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        button.secondary {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        button.danger {
+            background-color: #a6afb8;
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        button:not(:disabled):hover {
+            opacity: 0.9;
+        }
+
+        /* Data display section */
+        .data-display {
+            margin-top: 20px;
+        }
+
+        .voltage-display {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #0056b3;
+            margin: 10px 0;
+        }
+
+        /* Table styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #dee2e6;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        /* Loading spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Error message */
+        .error-message {
+            color: #dc3545;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        .info-row {
+            background-color: #f8f9fa;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .control-group input {
+            margin-bottom: 8px;
+        }
+
+        .control-group label {
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RS485機器制御パネル</h1>
+        <!-- デバイス制御セクション -->
+        <div class="device-controls">
+            <!-- 表示・設定器 -->
+            <div class="device-group" data-device-id="1">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="device1Checkbox" class="device-checkbox">
+                    <h3>表示器1</h3>
+                </div>
+                <div class="control-group">
+                    <label>デバイスID:</label>
+                    <input type="text" id="settingDeviceId" value="1" />
+                    <label>伝票番号:</label>
+                    <input type="text" id="document1" />
+                    <label>SN:</label>
+                    <input type="text" id="serialNumber1" />
+                </div>
+                <div class="voltage-display">
+                    <label>現在の電圧:</label>
+                    <span id="currentVoltage1">0.000 [V]</span>
+                </div>
+                <!--<div class="control-group">
+                    <label>フルスケール値:</label>
+                    <span id="id1-fullscale">-</span>
+                </div>-->
+            </div>
+
+            <!-- 表示器2 -->
+            <div class="device-group" data-device-id="2">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="device2Checkbox" class="device-checkbox">
+                    <h3>表示器2</h3>
+                </div>
+                <div class="control-group">
+                    <label>デバイスID:</label>
+                    <input type="text" id="displayDeviceId1" value="2" />
+                    <label>伝票番号:</label>
+                    <input type="text" id="document2" />
+                    <label>SN:</label>
+                    <input type="text" id="serialNumber2" />
+                </div>
+                <div class="voltage-display">
+                    <label>現在の電圧:</label>
+                    <span id="currentVoltage2">0.000 [V]</span>
+                </div>
+                <!--<div class="control-group">
+                    <label>フルスケール値:</label>
+                    <span id="id2-fullscale">-</span>
+                </div>-->
+            </div>
+
+            <!-- 表示器3 -->
+            <div class="device-group" data-device-id="3">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="device3Checkbox" class="device-checkbox">
+                    <h3>表示器3</h3>
+                </div>
+                <div class="control-group">
+                    <label>デバイスID:</label>
+                    <input type="text" id="displayDeviceId2" value="3" />
+                    <label>伝票番号:</label>
+                    <input type="text" id="document3" />
+                    <label>SN:</label>
+                    <input type="text" id="serialNumber3" />
+                </div>
+                <div class="voltage-display">
+                    <label>現在の電圧:</label>
+                    <span id="currentVoltage3">0.000 [V]</span>
+                </div>
+                <!--<div class="control-group">
+                    <label>フルスケール値:</label>
+                    <span id="id3-fullscale">-</span>
+                </div>-->
+            </div>
+
+            <!-- 表示器4 -->
+            <div class="device-group" data-device-id="4">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="device4Checkbox" class="device-checkbox">
+                    <h3>表示器3</h3>
+                </div>
+                <div class="control-group">
+                    <label>デバイスID:</label>
+                    <input type="text" id="displayDeviceId3" value="4" />
+                    <label>伝票番号:</label>
+                    <input type="text" id="document4" />
+                    <label>SN:</label>
+                    <input type="text" id="serialNumber4" />
+                </div>
+                <div class="voltage-display">
+                    <label>現在の電圧:</label>
+                    <span id="currentVoltage4">0.000 [V]</span>
+                </div>
+                <!--<div class="control-group">
+                    <label>フルスケール値:</label>
+                    <span id="id4-fullscale">-</span>
+                </div>-->
+            </div>
+        </div>
+        <!-- 接続状態とエラー表示 -->
+        <div class="error-message" id="errorMessage"></div>
+        <div class="status-container">
+            <button id="connectButton" class="primary">接続</button>
+            <button id="disconnectButton" class="danger" disabled>切断</button>
+            <span>接続状態: <span id="connectionStatus" class="status disconnected">未接続</span></span>
+            <span id="loadingIndicator" class="loading" style="display: none;"></span>
+        </div>
+
+        <!-- 測定設定セクション -->
+        <div class="device-group non-selectable">
+            <h3>測定設定</h3>
+            <div class="measurement-settings">
+                <div class="control-group">
+                    <label>初回測定待機時間（分）:</label>
+                    <input type="number" id="initialDelay" min="0" value="0" />
+                </div>
+                <div class="control-group">
+                    <label>測定間隔（分）:</label>
+                    <input type="number" id="measurementInterval" min="1" value="1" />
+                </div>
+                <div class="control-group">
+                    <label>測定回数:</label>
+                    <input type="number" id="measurementCount" min="1" value="1" />
+                </div>
+            </div>
+            <div class="info-text">
+                予定測定時間: <span id="totalTime">0分</span>
+            </div>
+        </div>
+
+        <!-- 流量制御セクション 使用しない
+        <div class="device-group non-selectable">
+            <h3>流量制御</h3>
+            <div class="control-group">
+                <label>流量設定 (0-100.0%):</label>
+                <input type="number" id="percentInput" min="0" max="100" step="0.1" />
+            </div>
+            <div class="button-group">
+                <button id="writeButton" class="primary" disabled>設定</button>
+                <button id="closeButton" class="secondary" disabled>全閉</button>
+            </div>
+        </div>-->
+
+        <!-- データ記録セクション -->
+        <div class="data-display">
+            <div class="button-group">
+                <button id="startRecording" class="primary" disabled>記録開始</button>
+                <button id="stopRecording" class="secondary" disabled>記録停止</button>
+                <button id="exportData" class="primary" disabled>CSV出力</button>
+                <button id="clearData" class="danger" disabled>データクリア</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>回数</th>
+                        <th>記録時間</th>
+                        <th id="header1">表示器1</th>
+                        <th id="header2">表示器2</th>
+                        <th id="header3">表示器3</th>
+                        <th id="header4">表示器4</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    // グローバル変数
+    let isRecording = false;
+    let scheduledMeasurements = [];
+    let currentMeasurement = 0;
+    let measurementTimeout;
+    let measurementData = [];
+    const selectedDevices = new Set();
+
+    // データ復元用の初期化関数
+    function initializeWithStoredData() {
+        console.log('初期化処理開始');
+        const savedData = localStorage.getItem('measurementTempData');
+        console.log('保存されていたデータ:', savedData);
+
+        if (savedData) {
+            try {
+                const tempData = JSON.parse(savedData);
+
+                // 基本データの復元
+                measurementData = tempData.measurementData || [];
+                currentMeasurement = tempData.currentMeasurement || 0;
+
+                // デバイス選択の復元
+                selectedDevices.clear();
+                tempData.selectedDevices.forEach(deviceId => {
+                    selectedDevices.add(deviceId);
+                    const checkbox = document.getElementById(`device${deviceId}Checkbox`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        const group = checkbox.closest('.device-group');
+                        if (group) {
+                            group.classList.add('selected');
+                        }
+                    }
+                });
+
+                // デバイス情報の復元
+                Object.entries(tempData.deviceInfo.documents).forEach(([deviceId, value]) => {
+                    const element = document.getElementById(`document${deviceId}`);
+                    if (element) {
+                        element.value = value;
+                    }
+                });
+
+                Object.entries(tempData.deviceInfo.serialNumbers).forEach(([deviceId, value]) => {
+                    const element = document.getElementById(`serialNumber${deviceId}`);
+                    if (element) {
+                        element.value = value;
+                    }
+                });
+
+                // テーブルデータの復元
+                const tbody = document.getElementById('dataTableBody');
+                if (tbody && measurementData.length > 0) {
+                    tbody.innerHTML = '';
+                    measurementData.forEach(data => {
+                        addDataToTable(data);
+                    });
+                }
+
+                // ヘッダーの更新
+                for (let i = 1; i <= 4; i++) {
+                    updateDeviceHeader(i);
+                }
+
+                // UI状態の更新
+                updateRecordingUI(false);
+
+                console.log('データ復元完了');
+            } catch (error) {
+                console.error('データ復元中にエラーが発生:', error);
+            }
+        } else {
+            console.log('保存されたデータがありません');
+        }
+    }
+
+    // エラー表示関数
+    function showError(message, duration = 5000) {
+        const errorElement = document.getElementById('errorMessage');
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+        setTimeout(() => {
+            errorElement.style.display = 'none';
+        }, duration);
+    }
+
+    // ローディング表示の制御
+    function setLoading(isLoading) {
+        document.getElementById('loadingIndicator').style.display = isLoading ? 'inline-block' : 'none';
+    }
+
+    // デバイス選択の初期化
+    function initializeDeviceSelection() {
+        const deviceGroups = document.querySelectorAll('.device-group[data-device-id]');
+
+        deviceGroups.forEach(group => {
+            const deviceId = group.dataset.deviceId;
+            const checkbox = group.querySelector('.device-checkbox');
+
+            if (checkbox) {
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        selectedDevices.add(deviceId);
+                        group.classList.add('selected');
+                    } else {
+                        selectedDevices.delete(deviceId);
+                        group.classList.remove('selected');
+                        document.getElementById(`currentVoltage${deviceId}`).textContent = '0.000 [V]';
+                    }
+                    saveTemporaryData();
+                });
+
+                group.addEventListener('click', (e) => {
+                    if (e.target.type !== 'checkbox' && !e.target.closest('input')) {
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
+                });
+            }
+        });
+    }
+
+    // 測定スケジュール作成
+    function createMeasurementSchedule() {
+        const initialDelay = parseInt(document.getElementById('initialDelay').value) * 60 * 1000;
+        const interval = parseInt(document.getElementById('measurementInterval').value) * 60 * 1000;
+        const count = parseInt(document.getElementById('measurementCount').value);
+
+        if (isNaN(initialDelay) || isNaN(interval) || isNaN(count)) {
+            showError('測定設定の値が不正です');
+            return null;
+        }
+
+        if (interval < 60000) {
+            showError('測定間隔は1分以上を指定してください');
+            return null;
+        }
+
+        scheduledMeasurements = [];
+        for (let i = 0; i < count; i++) {
+            if (i === 0) {
+                scheduledMeasurements.push(initialDelay);
+            } else {
+                scheduledMeasurements.push(interval);
+            }
+        }
+
+        return { initialDelay, interval, count };
+    }
+
+    // 測定予定時間の更新
+    function updateTotalTime() {
+        const initialDelay = parseInt(document.getElementById('initialDelay').value) || 0;
+        const interval = parseInt(document.getElementById('measurementInterval').value) || 0;
+        const count = parseInt(document.getElementById('measurementCount').value) || 0;
+
+        const totalMinutes = count > 1 ? (initialDelay + ((count - 1) * interval)) : initialDelay;
+
+        const now = new Date();
+        const completionTime = new Date(now.getTime() + totalMinutes * 60 * 1000);
+        const completionTimeStr = completionTime.getHours().toString().padStart(2, '0') + ':' +
+            completionTime.getMinutes().toString().padStart(2, '0');
+
+        document.getElementById('totalTime').textContent =
+            `測定時間：${totalMinutes}分（完了予定：${completionTimeStr}）`;
+    }
+
+    // データをテーブルに追加
+    function addDataToTable(data) {
+        const tbody = document.getElementById('dataTableBody');
+        const row = tbody.insertRow(-1);
+
+        row.insertCell(0).textContent = data.measurementNumber;
+        row.insertCell(1).textContent = data.timestamp;
+        row.insertCell(2).textContent = data.voltage1;
+        row.insertCell(3).textContent = data.voltage2;
+        row.insertCell(4).textContent = data.voltage3;
+        row.insertCell(5).textContent = data.voltage4;
+    }
+
+    // 一回の測定を実行
+    function recordMeasurement() {
+        const now = new Date().toLocaleString();
+        const data = {
+            measurementNumber: currentMeasurement + 1,
+            timestamp: now,
+            voltage1: selectedDevices.has('1') ? document.getElementById('currentVoltage1').textContent.replace(' [V]', '') : '',
+            voltage2: selectedDevices.has('2') ? document.getElementById('currentVoltage2').textContent.replace(' [V]', '') : '',
+            voltage3: selectedDevices.has('3') ? document.getElementById('currentVoltage3').textContent.replace(' [V]', '') : '',
+            voltage4: selectedDevices.has('4') ? document.getElementById('currentVoltage4').textContent.replace(' [V]', '') : ''
+        };
+
+        measurementData.push(data);
+        addDataToTable(data);
+        saveTemporaryData();
+    }
+    // 次の測定をスケジュール
+    function scheduleNextMeasurement() {
+        if (currentMeasurement >= scheduledMeasurements.length) {
+            stopRecording();
+            return;
+        }
+
+        const currentTime = scheduledMeasurements[currentMeasurement];
+        measurementTimeout = setTimeout(() => {
+            if (isRecording) {
+                recordMeasurement();
+                currentMeasurement++;
+                scheduleNextMeasurement();
+            }
+        }, currentTime);
+    }
+
+    // データを一時保存
+    function saveTemporaryData() {
+        try {
+            const tempData = {
+                measurementData: measurementData,
+                currentMeasurement: currentMeasurement,
+                selectedDevices: Array.from(selectedDevices),
+                deviceInfo: {
+                    documents: {},
+                    serialNumbers: {}
+                }
+            };
+
+            // デバイス情報の保存
+            for (let i = 1; i <= 4; i++) {
+                const docElement = document.getElementById(`document${i}`);
+                const snElement = document.getElementById(`serialNumber${i}`);
+                tempData.deviceInfo.documents[i] = docElement ? docElement.value : '';
+                tempData.deviceInfo.serialNumbers[i] = snElement ? snElement.value : '';
+            }
+
+            localStorage.setItem('measurementTempData', JSON.stringify(tempData));
+            console.log('データを保存しました:', tempData);
+        } catch (error) {
+            console.error('データ保存エラー:', error);
+        }
+    }
+
+    // 記録開始
+    async function startRecording() {
+        if (isRecording) return;
+
+        if (selectedDevices.size === 0) {
+            showError('少なくとも1つのデバイスを選択してください');
+            return;
+        }
+
+        const schedule = createMeasurementSchedule();
+        if (!schedule) return;
+
+        isRecording = true;
+        currentMeasurement = 0;
+        measurementData = [];
+        document.getElementById('dataTableBody').innerHTML = '';
+
+        updateRecordingUI(true);
+        scheduleNextMeasurement();
+    }
+
+    // 記録停止
+    function stopRecording() {
+        if (!isRecording) return;
+
+        isRecording = false;
+        clearTimeout(measurementTimeout);
+        updateRecordingUI(false);
+        showError('測定が完了しました', 3000);
+    }
+
+    // UI更新
+    function updateRecordingUI(recording) {
+        document.getElementById('startRecording').disabled = recording;
+        document.getElementById('stopRecording').disabled = !recording;
+        document.getElementById('exportData').disabled = recording;
+        document.getElementById('clearData').disabled = recording;
+
+        const checkboxes = document.querySelectorAll('.device-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.disabled = recording;
+        });
+
+        document.getElementById('initialDelay').disabled = recording;
+        document.getElementById('measurementInterval').disabled = recording;
+        document.getElementById('measurementCount').disabled = recording;
+    }
+
+    // CSVエクスポート
+    function exportToCSV() {
+        if (measurementData.length === 0) {
+            showError('エクスポートするデータがありません');
+            return;
+        }
+
+        const headers = [
+            '回数',
+            '記録時間',
+            '伝票番号/SN', 
+            '伝票番号/SN',
+            '伝票番号/SN',
+            '伝票番号/SN'
+        ];
+
+        // デバイスの詳細情報を表示する行を追加
+        const deviceDetails = [
+            '',
+            '',
+            `${document.getElementById('document1').value || '-'}/${document.getElementById('serialNumber1').value || '-'}`,
+            `${document.getElementById('document2').value || '-'}/${document.getElementById('serialNumber2').value || '-'}`,
+            `${document.getElementById('document3').value || '-'}/${document.getElementById('serialNumber3').value || '-'}`,
+            `${document.getElementById('document4').value || '-'}/${document.getElementById('serialNumber4').value || '-'}`
+        ];
+
+        // 電圧値のヘッダー
+        const voltageHeaders = [
+            '',
+            '',
+            '表示器1[V]',
+            '表示器2[V]',
+            '表示器3[V]',
+            '表示器4[V]'
+        ];
+
+        const csvRows = [headers, deviceDetails, voltageHeaders];
+
+        measurementData.forEach(data => {
+            csvRows.push([
+                data.measurementNumber,
+                data.timestamp,
+                data.voltage1,
+                data.voltage2,
+                data.voltage3,
+                data.voltage4
+            ]);
+        });
+
+        const csvContent = '\uFEFF' + csvRows.map(row => row.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        link.href = URL.createObjectURL(blob);
+        link.download = `voltage_measurements_${timestamp}.csv`;
+        link.click();
+    }
+
+    // データクリア
+    function clearData() {
+        if (!confirm('記録したデータをクリアしますか？')) return;
+
+        measurementData = [];
+        document.getElementById('dataTableBody').innerHTML = '';
+        document.getElementById('exportData').disabled = true;
+        document.getElementById('clearData').disabled = true;
+        localStorage.removeItem('measurementTempData');
+    }
+
+    // 接続状態の変更を監視
+    function observeConnectionStatus() {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.target.id === 'connectionStatus') {
+                    const isConnected = mutation.target.classList.contains('connected');
+                    document.getElementById('startRecording').disabled = !isConnected;
+                    document.getElementById('stopRecording').disabled = true;
+
+                    if (isConnected) {
+                        startVoltageReading();
+                    } else {
+                        stopVoltageReading();
+                        stopRecording();
+                    }
+                }
+            });
+        });
+
+        observer.observe(document.getElementById('connectionStatus'), {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+    }
+
+    // ヘッダー更新関数
+    function updateDeviceHeader(deviceNum) {
+        const docNumber = document.getElementById(`document${deviceNum}`).value || '';
+        const serialNumber = document.getElementById(`serialNumber${deviceNum}`).value || '';
+        const header = document.getElementById(`header${deviceNum}`);
+
+        if (docNumber || serialNumber) {
+            header.innerHTML = `表示器${deviceNum}<br>${docNumber}/${serialNumber}`;
+        } else {
+            header.innerHTML = `表示器${deviceNum}`;
+        }
+    }
+
+    // イベントリスナーの設定
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!('serial' in navigator)) {
+            showError('このブラウザはシリアル通信に対応していません。\nChrome/Edge/Operaの最新版をご使用ください。');
+            document.getElementById('connectButton').disabled = true;
+            return;
+        }
+
+        // ボタンイベントの設定
+        document.getElementById('startRecording').addEventListener('click', startRecording);
+        document.getElementById('stopRecording').addEventListener('click', stopRecording);
+        document.getElementById('exportData').addEventListener('click', exportToCSV);
+        document.getElementById('clearData').addEventListener('click', clearData);
+
+        // 測定時間の計算用リスナー
+        document.getElementById('initialDelay').addEventListener('input', updateTotalTime);
+        document.getElementById('measurementInterval').addEventListener('input', updateTotalTime);
+        document.getElementById('measurementCount').addEventListener('input', updateTotalTime);
+
+        // 伝票番号とSNの入力イベントを監視
+        for (let i = 1; i <= 4; i++) {
+            const docInput = document.getElementById(`document${i}`);
+            const snInput = document.getElementById(`serialNumber${i}`);
+
+            if (docInput) {
+                docInput.addEventListener('input', () => {
+                    updateDeviceHeader(i);
+                    saveTemporaryData();
+                });
+            }
+            if (snInput) {
+                snInput.addEventListener('input', () => {
+                    updateDeviceHeader(i);
+                    saveTemporaryData();
+                });
+            }
+        }
+
+        // デバイス選択の初期化
+        initializeDeviceSelection();
+
+        // データの復元
+        initializeWithStoredData();
+
+        // 接続状態の監視を開始
+        observeConnectionStatus();
+    });
+
+    // ページ離脱時の処理
+    window.addEventListener('beforeunload', (e) => {
+        if (measurementData.length > 0) {
+            saveTemporaryData();
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });    
+
+</script>
+<script src="js/connectZero.js"></script>
+<script src="js/commandZero.js"></script>
+</body>
+</html>
