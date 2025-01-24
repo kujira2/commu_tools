@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>CR-400通信用ﾌﾟﾛｸﾞﾗﾑV4</title>
+    <link rel="stylesheet" href="cssjs/styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <h2>CR-400通信用プログラム</h2>
+        <p>CR-400 2台接続する用,F.S.5000表示を設定してください！</p>
+        <div class="layout-grid">
+            <div class="left-panel">
+                <div class="deivceAndDisplay">
+                    <div class="device-settings">
+                        <h2>デバイス設定</h2>
+                        <div class="device-id-settings">
+                            <div class="device-row">
+                                <label>設定器ID:</label>
+                                <input type="text" id="settingDeviceId" class="device-id-input" maxlength="3" value="1">
+                            </div>
+                            <div class="device-row">
+                                <label>表示器ID:</label>
+                                <input type="text" id="displayDeviceId" class="device-id-input" maxlength="3" value="2">
+                            </div>
+                            <button id="saveDeviceSettings">ID設定保存</button>
+                        </div>
+                    </div>
+                    <div class="display-Area-right">
+                        <div class="connection-area">
+                            <button id="connectButton">接続</button>
+                            <button id="disconnectButton" disabled>切断</button>
+                            <span id="connectionStatus" class="status disconnected">Disconnected</span>
+                        </div>
+                        <div class="display-area">
+                            <div class="displayLeft">
+                                <p>CR-400設定器:</p>
+                                <p>FS設定値: <span id="id1-fullscale">--</span></p>
+                            </div>
+                            <div class="displayRight">
+                                <p>CR-400表示器:</p>
+                                <p>FS設定値: <span id="id2-fullscale">--</span></p>
+                            </div>
+                        </div>
+                    </div>
+<div class="temperature-control">
+    <h3>恒温槽制御</h3>
+    <div class="temp-settings">
+        <div class="operation-mode">
+            <button id="modeButton" class="mode-button mode-off" disabled>定値運転<br>Start</button>
+            <button id="controlButton" class="control-button control-off" disabled>運転<br>ON</button>
+        </div>
+        <div class="temp-row">
+            <label>設定温度 (℃):</label>
+            <input type="number" id="tempValue" min="0" max="60" step="0.1" value="25.0">
+            <button id="setTempButton" disabled>設定</button>
+            <button id="return25" disabled>25℃復帰</button>
+        </div>
+        <div class="temp-row">
+            <label>現在温度:</label>
+            <span id="currentTemp">-- ℃</span>
+        </div>
+    </div>
+</div>
+                </div>
+
+                <div class="control-panel">
+                    <div class="manual-control">
+                        <h2>手動流量設定[%]</h2>
+                        <div class="control-buttons">
+                            <label>パーセンテージ (0-100.0): </label>
+                            <input type="number" id="percentInput" step="0.1" min="0" max="100.0">
+                            <button onclick="writeValue('set')" id="writeButton" disabled>流量設定</button>
+                            <button onclick="writeValue('close')" id="closeButton">全閉</button>
+                        </div>
+                        <div class="voltage-display">
+                            <h3>出力電圧:</h3>
+                            <div class="voltage-values">
+                                <div>設定器: <span id="currentVoltage1">0.000 [V]</span></div>
+                                <div>表示器: <span id="currentVoltage2">0.000 [V]</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="auto-control">
+                        <h2>自動流量設定</h2>
+                        <div class="automation-table-container">
+                            <table id="automationTable">
+                                <thead>
+                                    <tr>
+                                        <th>設定値 (%)</th>
+                                        <th>時間 (秒)</th>
+                                        <th>設定器出力 (V)</th>
+                                        <th>表示器出力 (V)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><input type="text" class="percent-input" maxlength="6"></td>
+                                        <td><input type="text" class="time-input" maxlength="3"></td>
+                                        <td><input type="text" disabled></td>
+                                        <td><input type="text" disabled></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="automation-controls">
+                                <button id="addRow">行追加</button>
+                                <button id="startAutomation">開始</button>
+                                <button id="exportCSV">CSV出力</button>
+                            </div>
+
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div id="progress"></div>
+                                </div>
+                                <div id="progressText">0%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="voltageChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+<script type="module" src="cssjs/modbus-commands.js"></script>
+<script type="module" src="cssjs/connect.js"></script>
+<script type="module" src="cssjs/command.js"></script>
+<script type="module" src="cssjs/temperature-control.js"></script>
+<script type="module" src="cssjs/automation.js"></script>
+</body>
+
+</html>
