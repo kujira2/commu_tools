@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="print-color-adjust" content="exact">
+    <title>8700 Modbus確認用</title>
+    <link rel="stylesheet" href="js/modbus-styles_8700V7.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>8700MCシリーズModbus仕様確認プログラム</h1>
+
+        <div class="top-controls">
+            <div class="comm-panel">
+                <div class="comm-settings">
+                    <div class="setting-item">
+                        <label for="baudRate">通信速度:</label>
+                        <select id="baudRate">
+                            <option value="9600">9600 bps</option>
+                            <option value="19200">19200 bps</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="parity">パリティ:</label>
+                        <select id="parity">
+                            <option value="none">なし (None)</option>
+                            <option value="even">偶数 (Even)</option>
+                            <option value="odd">奇数 (Odd)</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="deviceId">デバイスID:</label>
+                        <input type="number" id="deviceId" min="1" max="247" value="1" style="width: 60px;">
+                    </div>
+                    <button id="connectButton" class="connect-button">接続</button>
+                    <span id="connectionStatus" class="status-text">未接続</span>
+                </div>
+            </div>
+            <div class="test-button-container">
+                <button id="startTest" class="test-button" disabled>流量検査開始</button>
+                <button id="stopTest" class="test-button stop" disabled>停止</button>
+            </div>
+        </div>
+    
+        <div class="main-content">
+            <div class="status-panel">
+                <div class="status-item">
+                    <span class="status-label">RUNキー状態:</span>
+                    <span id="runKeyStatus">読み込み中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">設定モード:</span>
+                    <span id="settingMode">読み込み中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">オートゼロ状態:</span>
+                    <span id="autoZeroStatus">読み込み中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">0-2%表示設定:</span>
+                    <span id="displayMode">読み込み中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">流量レンジ:</span>
+                    <span id="flowRange">読み込み中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">積算初期化:</span>
+                    <button id="resetTotalizer" class="totalizer-button">積算初期化</button>
+                </div>
+            </div>
+    
+            <div class="right-content">
+                <div class="chart-container">
+                    <canvas id="flowChart"></canvas>
+                </div>
+            </div>
+        </div>
+    
+        <div class="command-history">
+            <h3>通信履歴</h3>
+            <div id="commandLog" class="command-log"></div>
+        </div>
+        
+    </div>
+
+    <script type="module">
+    // モジュールのインポート
+    import { ModbusCommands } from './js/modbus-commands_8700.js';
+    import { SerialConnection } from './js/serial-connection_8700.js';
+    import { FlowChartManager } from './js/flow-chart_8700.js';
+
+    class ModbusMonitor {
+        constructor() {
+            this.serialConnection = new SerialConnection();
+            this.serialConnection.setMonitor(this);
+            this.chartManager = new FlowChartManager();
+            this.isTestRunning = false;
+            this.maxRange = 0;
+            this.decimalPoint = 0;
+            this.updateInterval = null;
+            this.stopRequested = false;
+            this.commandLog = document.getElementById('commandLog');
+        }
+
+        addLogEntry(type, data, description = '') {
+            const now = new Date();
+            const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now.getMilliseconds().toString().padStart(3, '0')}`;
+
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+
+            const hexData = Array.from(data)
+                .map(byte => byte.toString(16).padStart(2, '0').toUpperCase())
+                .join(' ');
+
+            entry.textContent = `${timestamp} ${type === 'send' ? '→' : '←'} ${hexData} ${description}`;
+            this.commandLog.insertBefore(entry, this.commandLog.firstChild);
+
+            while (this.commandLog.children.length > 100) {
+                this.commandLog.removeChild(this.commandLog.lastChild);
+            }
+        }
+
+        addErrorLog(error) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry error';
+            entry.textContent = `${new Date().toLocaleTimeString()} ERROR: ${error.message || error}`;
+            this.commandLog.insertBefore(entry, this.commandLog.firstChild);
+        }
+
+        async initialize() {
+            try {
+                console.log('Initializing ModbusMonitor...');
+                if (typeof Chart === 'undefined') {
+                    console.error('Chart.js is not loaded');
+                    throw new Error('Chart.js is not loaded');
+                }
+
+                await this.chartManager.initialize();
+                this.setupEventListeners();
+
+                console.log('ModbusMonitor initialized successfully');
+            } catch (error) {
+                console.error('ModbusMonitor initialization error:', error);
+                const errorDiv = document.createElement('div');
+                errorDiv.style.color = 'red';
+                errorDiv.textContent = `初期化エラー: ${error.message}`;
+                document.querySelector('.chart-container').prepend(errorDiv);
+            }
+        }
+
+        async determineFlowUnit() {
+            try {
+                const rangeResponse = await this.serialConnection.sendCommand(
+                    ModbusCommands.createReadFlowRateRange()
+                );
+
+                const decimalResponse = await this.serialConnection.sendCommand(
+                    ModbusCommands.createReadDecimalPoint()
+                );
+
+                if (!rangeResponse || !decimalResponse) {
+                    console.error('Failed to read flow parameters');
+                    document.getElementById('flowRange').textContent = 'エラー';
+                    return;
+                }
+
+                const range = (rangeResponse[3] << 8) | rangeResponse[4];
+                const decimalPoint = (decimalResponse[3] << 8) | decimalResponse[4];
+
+                this.maxRange = range;
+                this.decimalPoint = decimalPoint;
+
+                const adjustedRange = (range / Math.pow(10, decimalPoint)).toFixed(decimalPoint);
+                document.getElementById('flowRange').textContent = adjustedRange;
+
+                this.chartManager.setMaxRange(adjustedRange);
+
+                console.log(`Flow range: ${adjustedRange} (Raw: ${range}, DP: ${decimalPoint})`);
+            } catch (error) {
+                console.error('Error determining flow parameters:', error);
+                document.getElementById('flowRange').textContent = 'エラー';
+                this.addErrorLog(error);
+            }
+        }
+
+        async updateCoilStatus() {
+            const response = await this.serialConnection.sendCommand(
+                ModbusCommands.createReadCoilStatus()
+            );
+            if (!response) return;
+
+            if (response && response.length >= 4) {
+                const statusByte = response[3];
+                document.getElementById('runKeyStatus').textContent =
+                    (statusByte & 0x01) ? 'RUNキー使用中' : 'RUNキー不使用';
+                document.getElementById('settingMode').textContent =
+                    (statusByte & 0x02) ? 'アナログ設定' : 'デジタル設定';
+                document.getElementById('autoZeroStatus').textContent =
+                    (statusByte & 0x10) ? 'オートゼロ使用中' : 'オートゼロ不使用';
+                document.getElementById('displayMode').textContent =
+                    (statusByte & 0x20) ? '0-2％の時0表示' : '0-2%範囲表示';
+            }
+        }
+
+        async updateFlowRate() {
+            const response = await this.serialConnection.sendCommand(
+                ModbusCommands.createReadFlowRateOutput()
+            );
+            if (!response) return;
+
+            if (response && response.length >= 5) {
+                const flowValue = (response[3] << 8) | response[4];
+                const adjustedFlow = this.adjustFlowValueByDecimalPoint(flowValue);
+                await this.chartManager.updateChart(adjustedFlow);
+                console.log(`Current flow value: ${adjustedFlow}`);
+            }
+        }
+
+        setupEventListeners() {
+            document.getElementById('connectButton').addEventListener('click', async () => {
+                if (!this.serialConnection.isConnected()) {
+                    const connected = await this.serialConnection.connect();
+                    if (connected) {
+                        document.getElementById('connectionStatus').textContent = '接続済み';
+                        document.getElementById('startTest').disabled = false;
+                        document.getElementById('stopTest').disabled = false;
+                        document.getElementById('connectButton').textContent = '切断';
+
+                        await this.sleep(500);
+                        await this.determineFlowUnit();
+                        await this.updateCoilStatus();
+                        await this.chartManager.startNewTest();
+                        this.startPeriodicUpdate();
+                    }
+                } else {
+                    await this.serialConnection.disconnect();
+                    document.getElementById('connectionStatus').textContent = '未接続';
+                    document.getElementById('startTest').disabled = true;
+                    document.getElementById('stopTest').disabled = true;
+                    document.getElementById('connectButton').textContent = '接続';
+                    this.stopPeriodicUpdate();
+                }
+            });
+
+            document.getElementById('startTest').addEventListener('click',
+                async () => await this.runFlowTest());
+
+            document.getElementById('stopTest').addEventListener('click',
+                async () => await this.stopFlowTest());
+
+            const resetTotalizerButton = document.getElementById('resetTotalizer');
+            resetTotalizerButton.addEventListener('click', () => {
+                if (!resetTotalizerButton.classList.contains('active')) {
+                    resetTotalizerButton.classList.add('active');
+                    resetTotalizerButton.textContent = '積算初期化完了';
+                } else {
+                    resetTotalizerButton.classList.remove('active');
+                    resetTotalizerButton.textContent = '積算初期化';
+                }
+            });
+        }
+
+        adjustFlowValueByDecimalPoint(value) {
+            return value / Math.pow(10, this.decimalPoint);
+        }
+
+        async runFlowTest() {
+            if (this.isTestRunning) return;
+
+            this.isTestRunning = true;
+            this.stopRequested = false;
+            document.getElementById('startTest').disabled = true;
+            document.getElementById('stopTest').disabled = false;
+
+            try {
+                this.stopPeriodicUpdate();
+                await this.chartManager.resetChart();
+                await this.serialConnection.sendCommand(
+                    ModbusCommands.createWriteControlMode(1)
+                );
+
+                await this.sleep(1000);
+
+                const steps = [0, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0];
+                const setPoints = steps.map(step => Math.floor(this.maxRange * step));
+                const readInterval = 100;
+                const samplesPerPoint = Math.floor(10000 / readInterval);
+
+                for (const setValue of setPoints) {
+                    if (this.stopRequested) break;
+
+                    await this.serialConnection.sendCommand(
+                        ModbusCommands.createWriteFlowRateSetpoint(setValue)
+                    );
+
+                    for (let i = 0; i < samplesPerPoint; i++) {
+                        if (this.stopRequested) break;
+
+                        const response = await this.serialConnection.sendCommand(
+                            ModbusCommands.createReadFlowRateOutput()
+                        );
+
+                        if (response && response.length >= 5) {
+                            const flowValue = (response[3] << 8) | response[4];
+                            const adjustedFlow = this.adjustFlowValueByDecimalPoint(flowValue);
+                            await this.chartManager.updateChart(adjustedFlow);
+                        }
+
+                        await this.sleep(readInterval);
+                    }
+                }
+
+                if (!this.stopRequested) {
+                    await this.serialConnection.sendCommand(
+                        ModbusCommands.createWriteFlowRateSetpoint(0)
+                    );
+                    await this.sleep(1000);
+
+                    await this.serialConnection.sendCommand(
+                        ModbusCommands.createWriteControlMode(2)
+                    );
+                }
+
+            } catch (error) {
+                console.error('Flow test error:', error);
+                this.addErrorLog(error);
+            } finally {
+                this.isTestRunning = false;
+                this.stopRequested = false;
+                document.getElementById('startTest').disabled = false;
+                document.getElementById('stopTest').disabled = false;
+                this.startPeriodicUpdate();
+            }
+        }
+
+        async stopFlowTest() {
+            if (!this.isTestRunning) return;
+
+            this.stopRequested = true;
+            document.getElementById('stopTest').disabled = true;
+
+            try {
+                await this.serialConnection.sendCommand(
+                    ModbusCommands.createWriteFlowRateSetpoint(0)
+                );
+                await this.sleep(1000);
+
+                await this.serialConnection.sendCommand(
+                    ModbusCommands.createWriteControlMode(2)
+                );
+
+                await this.chartManager.clear();
+
+            } catch (error) {
+                console.error('Stop flow test error:', error);
+                this.addErrorLog(error);
+            } finally {
+                this.isTestRunning = false;
+                this.stopRequested = false;
+                document.getElementById('startTest').disabled = false;
+                document.getElementById('stopTest').disabled = false;
+            }
+        }
+
+        startPeriodicUpdate() {
+            this.stopPeriodicUpdate();
+            this.updateInterval = setInterval(async () => {
+                await this.updateCoilStatus();
+            }, 1000);
+        }
+
+        stopPeriodicUpdate() {
+            if (this.updateInterval) {
+                clearInterval(this.updateInterval);
+                this.updateInterval = null;
+            }
+        }
+
+        sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    }
+
+    // アプリケーション初期化
+    if ('serial' in navigator) {
+        const monitor = new ModbusMonitor();
+        monitor.initialize();
+    } else {
+        alert('このブラウザはWeb Serial APIをサポートしていません。\nChrome/Edge等の対応ブラウザをご使用ください。');
+    }
+</script>
+    </body>
+    
+    </html>
