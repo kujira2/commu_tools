@@ -1,5 +1,4 @@
 export class ModbusCommands {
-    // 既存のメソッド
     static calculateCRC(data, length) {
         let crc = 0xFFFF;
         for (let i = 0; i < length; i++) {
@@ -15,9 +14,7 @@ export class ModbusCommands {
         return [crc & 0xFF, (crc >> 8) & 0xFF];
     }
 
-    static createCommand(command, deviceId = 1) {
-        // デバイスIDを置き換える
-        command[0] = deviceId;
+    static createCommand(command) {
         const crc = this.calculateCRC(command, command.length - 2);
         command[command.length - 2] = crc[0];
         command[command.length - 1] = crc[1];
@@ -30,7 +27,7 @@ export class ModbusCommands {
         const data = new Uint8Array([
             deviceId,    // デバイスID（可変）
             0x01,       // ファンクションコード
-            0x00, 0x00, // 開始アドレス
+            0x00, 0x00, // 開始アドレス (00001~00006)
             0x00, 0x06, // レジスタ数
             0x00, 0x00  // CRCのためのプレースホルダー
         ]);
@@ -42,8 +39,8 @@ export class ModbusCommands {
         const deviceId = parseInt(document.getElementById('deviceId').value) || 1;
         const data = new Uint8Array([
             deviceId,    // デバイスID（可変）
-            0x04,       // ファンクションコード
-            0x00, 0x00, // リファレンス番号
+            0x04,       // ファンクションコード (Read Input Registers)
+            0x00, 0x00, // リファレンス番号 30001
             0x00, 0x01, // レジスタ数
             0x00, 0x00  // CRCのためのプレースホルダー
         ]);
@@ -57,7 +54,7 @@ export class ModbusCommands {
             deviceId,    // デバイスID（可変）
             0x03,       // ファンクションコード (Read Holding Registers)
             0x00, 0x1B, // リファレンス番号 40028
-            0x00, 0x01  // レジスタ数
+            0x00, 0x01, // レジスタ数
             0x00, 0x00  // CRCのためのプレースホルダー
         ]);
         return this.createCommand(data);
@@ -70,7 +67,7 @@ export class ModbusCommands {
             deviceId,    // デバイスID（可変）
             0x03,       // ファンクションコード (Read Holding Registers)
             0x00, 0x08, // リファレンス番号 40009
-            0x00, 0x01  // レジスタ数
+            0x00, 0x01, // レジスタ数
             0x00, 0x00  // CRCのためのプレースホルダー
         ]);
         return this.createCommand(data);
@@ -83,7 +80,7 @@ export class ModbusCommands {
             deviceId,    // デバイスID（可変）
             0x06,       // ファンクションコード (Write Single Register)
             0x00, 0x15, // リファレンス番号 40022
-            (value >> 8) & 0xFF, value & 0xFF  // 設定値
+            (value >> 8) & 0xFF, value & 0xFF, // 設定値
             0x00, 0x00  // CRCのためのプレースホルダー
         ]);
         return this.createCommand(data);
@@ -96,9 +93,9 @@ export class ModbusCommands {
             deviceId,    // デバイスID（可変）
             0x06,       // ファンクションコード (Write Single Register)
             0x00, 0x1C, // リファレンス番号 40029
-            0x00, mode  // モード値 (1: control, 2: fullyclosed)
+            0x00, mode, // モード値 (1: control, 2: fullyclosed)
             0x00, 0x00  // CRCのためのプレースホルダー
         ]);
-        return this.createCommand([...data, crc[0], crc[1]]);
+        return this.createCommand(data);
     }
 }
