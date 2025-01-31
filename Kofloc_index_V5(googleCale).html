@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <!--Ver4.0 2025/1/21-->
     <meta charset="UTF-8">
@@ -15,12 +16,12 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             min-width: 1000px;
             width: calc(100%-20px);
-            height:calc(100%-20px);
+            height: calc(100%-20px);
             margin: 0 auto;
             padding: 2px 2px 10px 2px;
-            border-top:1px solid #0c4466;
+            border-top: 1px solid #0c4466;
             background-color: #f5f5f5;
-            align-items:center;
+            align-items: center;
         }
 
         .grid {
@@ -40,19 +41,19 @@
             align-items: center;
             height: 30px;
             width: auto;
-            font-family:  "Consolas", monospace;
+            font-family: "Consolas", monospace;
             font-weight: bold;
             font-size: 1.2em;
             color: #dce6ed;
-            border-left:1px solid #dce2e6;
+            border-left: 1px solid #dce2e6;
             margin-left: auto;
-            padding: 0 10px 0 15px; 
+            padding: 0 10px 0 15px;
 
         }
 
         .card {
-            color:white;
-            width: 90px; 
+            color: white;
+            width: 90px;
             height: 30px;
             transition: all 0.2s ease;
             display: flex;
@@ -61,16 +62,16 @@
             text-align: center;
             position: relative;
             overflow: hidden;
-            border-bottom:1px solid #0c4466;
-            border-left:1px solid #dce2e6;
+            border-bottom: 1px solid #0c4466;
+            border-left: 1px solid #dce2e6;
         }
 
         .card:hover {
             background-color: #dce2e6;
-            color:#0c4466;
+            color: #0c4466;
         }
 
-            
+
         .card h2 {
             position: relative;
             z-index: 2;
@@ -92,13 +93,14 @@
             display: flex;
             gap: 0;
             margin-top: 2px;
-            height: calc(100vh - 50px); /* 最大高さを設定 */
+            height: calc(100vh - 50px);
+            /* 最大高さを設定 */
             position: relative;
             background: white;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             user-select: none;
-            overflow:hidden;
+            overflow: hidden;
         }
 
         .memo-container {
@@ -125,6 +127,7 @@
             z-index: 10;
             touch-action: none;
         }
+
         .resize-handle::after {
             content: "...";
             color: #666;
@@ -138,9 +141,10 @@
             background: white;
             border-radius: 0 8px 8px 0;
             padding: 8px;
-            height: calc(100% - 16px);/* 最大高さを設定 */
+            height: calc(100% - 16px);
+            /* 最大高さを設定 */
             flex: 1;
-            min-width: 200px; 
+            min-width: 200px;
             overflow: hidden;
         }
 
@@ -184,16 +188,20 @@
             border: none;
             overflow: hidden;
             display: block;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE and Edge */
-            zoom: 90%; 
+            scrollbar-width: none;
+            /* Firefox */
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            zoom: 90%;
         }
 
         .memo-container iframe::-webkit-scrollbar,
         .schedule-container iframe::-webkit-scrollbar,
         .tab-content iframe::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
-        }  
+            display: none;
+            /* Chrome, Safari, Opera */
+        }
+
         .fullscreen-button {
             position: absolute;
             top: 0;
@@ -219,17 +227,201 @@
             z-index: 50;
             background: white;
         }
+
         .schedule-container.fullscreen iframe {
             width: 100%;
             height: 100%;
             border: none;
         }
+
         .memo-container.hidden {
             display: none;
         }
     </style>
+        <script>
+            const CalendarManager = {
+                config: {
+                    domain: 'kofloc.co.jp',
+                    sharedCalendars: [
+                        'mfseisan-share@kofloc.co.jp',
+                        'ja.japanese#holiday@group.v.calendar.google.com'
+                    ],
+                    baseOptions: {
+                        ctz: 'Asia/Tokyo',
+                        mode: 'MONTH',
+                        showTitle: '0',
+                        showNav: '1',
+                        showPrint: '0',
+                        showTabs: '1',
+                        showTz: '0',
+                        showCalendars: '1',
+                        showAddEventButton: '1'
+                    }
+                },
+
+                updateCalendar() {
+                    // 基本URLの構築
+                    let calendarUrl = 'https://calendar.google.com/calendar/embed?';
+
+                    // Workspaceユーザー用のパラメータを追加
+                    calendarUrl += 'authuser=0';
+
+                    // 現在のユーザーのカレンダーを自動的に追加
+                    calendarUrl += '&wkst=1';
+                    calendarUrl += '&bgcolor=%23ffffff';
+
+                    // 共有カレンダーを追加
+                    this.config.sharedCalendars.forEach(calendar => {
+                        calendarUrl += '&src=' + encodeURIComponent(calendar);
+                    });
+
+                    // その他のオプションを追加
+                    Object.entries(this.config.baseOptions).forEach(([key, value]) => {
+                        calendarUrl += `&${key}=${value}`;
+                    });
+
+                    console.log('Calendar URL:', calendarUrl); // デバッグ用
+
+                    const calendarIframe = document.getElementById('google-calendar-main');
+                    if (calendarIframe) {
+                        // iframeの属性を設定
+                        calendarIframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox');
+                        calendarIframe.src = calendarUrl;
+                    }
+                }
+            };
+
+            // カレンダーのロードハンドラー
+            function handleCalendarLoad(iframe) {
+                try {
+                    console.log('Calendar iframe loaded');
+
+                    // iframeのソースURLをログに記録
+                    console.log('Loaded URL:', iframe.src);
+
+                    // エラーチェック
+                    if (iframe.contentWindow) {
+                        console.log('iframe contentWindow is available');
+                    }
+                } catch (e) {
+                    console.error('Calendar load error:', e);
+                }
+            }
+
+            // 時計の更新関数
+            function updateDateTime() {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('ja-JP');
+                document.getElementById('time').textContent = timeStr;
+            }
+
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+
+            // リサイズ機能の実装
+            const resizeHandle = document.querySelector('.resize-handle');
+            const memoContainer = document.querySelector('.memo-container');
+            const scheduleContainer = document.querySelector('.schedule-container');
+            let isResizing = false;
+            let startX;
+            let startWidth;
+
+            resizeHandle.addEventListener('mousedown', initResize);
+            resizeHandle.addEventListener('touchstart', initResize);
+
+            function initResize(e) {
+                isResizing = true;
+                startX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
+                startWidth = memoContainer.offsetWidth;
+                document.addEventListener('mousemove', resize);
+                document.addEventListener('touchmove', resize);
+                document.addEventListener('mouseup', stopResize);
+                document.addEventListener('touchend', stopResize);
+                document.body.style.cursor = 'col-resize';
+                memoContainer.style.pointerEvents = 'none';
+                scheduleContainer.style.pointerEvents = 'none';
+            }
+
+            function resize(e) {
+                if (!isResizing) return;
+                const currentX = e.type === 'mousemove' ? e.clientX : e.touches[0].clientX;
+                const diff = currentX - startX;
+                const newWidth = Math.min(Math.max(startWidth + diff, 100),
+                    memoContainer.parentElement.offsetWidth * 0.8);
+                memoContainer.style.width = `${newWidth}px`;
+                memoContainer.style.overflow = 'hidden';
+                scheduleContainer.style.overflow = 'hidden';
+            }
+
+            function stopResize() {
+                if (!isResizing) return;
+                isResizing = false;
+                document.removeEventListener('mousemove', resize);
+                document.removeEventListener('touchmove', resize);
+                document.removeEventListener('mouseup', stopResize);
+                document.removeEventListener('touchend', stopResize);
+
+                document.body.style.cursor = '';
+                memoContainer.style.pointerEvents = '';
+                scheduleContainer.style.pointerEvents = '';
+                memoContainer.style.overflow = 'hidden';
+                scheduleContainer.style.overflow = 'hidden';
+            }
+
+            resizeHandle.addEventListener('touchmove', function (e) {
+                e.preventDefault();
+            }, { passive: false });
+
+            // タブ切り替え機能
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    const tabId = tab.getAttribute('data-tab');
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === tabId) {
+                            content.classList.add('active');
+                            if (tabId === 'calendar2') {
+                                CalendarManager.updateCalendar();
+                            }
+                        }
+                    });
+                });
+            });
+
+            // 全画面表示ボタンの機能
+            const fullscreenButton = document.querySelector('.fullscreen-button');
+            fullscreenButton.addEventListener('click', function () {
+                const memoContainer = document.querySelector('.memo-container');
+                const scheduleContainer = document.querySelector('.schedule-container');
+                const resizeHandle = document.querySelector('.resize-handle');
+
+                if (scheduleContainer.classList.contains('fullscreen')) {
+                    scheduleContainer.classList.remove('fullscreen');
+                    memoContainer.classList.remove('hidden');
+                    resizeHandle.style.display = 'flex';
+                    this.textContent = '掲示板非表示';
+                } else {
+                    scheduleContainer.classList.add('fullscreen');
+                    memoContainer.classList.add('hidden');
+                    resizeHandle.style.display = 'none';
+                    this.textContent = '掲示板再表示';
+                }
+            });
+
+            // 初期化
+            document.addEventListener('DOMContentLoaded', function () {
+                CalendarManager.updateCalendar();
+            });
+        </script>
 </head>
-<body>   
+
+<body>
     <div class="grid">
         <a href="https://mail.google.com/mail/u/0/" target="_blank" class="card" style="border-radius: 4px 0 0 0;">
             <h2>Gmail</h2>
@@ -238,15 +430,15 @@
         <a href="https://tm.minagine.net/index.html" target="_blank" class="card">
             <h2><strong>MINA</strong>GINE</h2>
         </a>
-        
+
         <a href="https://sxwftbae53.actionpassport.jp/XFV20/logout" target="_blank" class="card">
             <h2>Action Passport</h2>
         </a>
-        
+
         <a href="http://172.16.200.39/" target="_blank" class="card">
             <h2>Explanner</h2>
-        </a>      
-        
+        </a>
+
         <a href="http://172.16.200.32:9000/menu" target="_blank" class="card">
             <h2>FES.</h2>
         </a>
@@ -258,11 +450,11 @@
         <a href="https://id.layerx.jp/" target="_blank" class="card">
             <h2>Bakuraku</h2>
         </a>
-        
+
         <a href="https://hcompass.net/c/login" target="_blank" class="card">
             <h2>目標評価</h2>
         </a>
-        
+
         <a href="https://cloud.anpikakunin.com/kofloc" target="_blank" class="card">
             <h2>安否確認</h2>
         </a>
@@ -270,7 +462,7 @@
         </div>
     </div>
 
-   <div class="memo-schedule-container">
+    <div class="memo-schedule-container">
         <button class="fullscreen-button">掲示板非表示</button>
         <div class="memo-container">
             <iframe
@@ -283,204 +475,24 @@
                 <button class="tab active" data-tab="calendar1">スケジュール</button>
                 <button class="tab" data-tab="calendar2">Googleカレンダ</button>
             </div>
-        
+
             <!-- Google Calendar用のdiv要素を修正 -->
             <div class="tab-content" id="calendar2">
-    <div style="display: flex; height: 100%; gap: 10px;">
-        <div style="flex: 2; height: 100%;">
-            <iframe id="google-calendar-main" 
-                    style="border: 0; width: 100%; height: 100%;" 
-                    frameborder="0" 
-                    scrolling="no"
-                    onload="handleCalendarLoad(this)"
-                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox">
-            </iframe>
-        </div>
-    </div>
-</div>
+                <div style="display: flex; height: 100%; gap: 10px;">
+                    <div style="flex: 2; height: 100%;">
+                        <iframe id="google-calendar-main" style="border: 0; width: 100%; height: 100%;" frameborder="0" scrolling="no"
+                            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox">
+                        </iframe>
+                    </div>
+                </div>
+            </div>
 
             <div class="tab-content active" id="calendar1">
-                <iframe src="https://sateraito-apps-calendar.appspot.com/kofloc.co.jp/v2/sateraito_calendar.html"
-                    onload="handleCalendarLoad(this)">
+                <iframe src="https://sateraito-apps-calendar.appspot.com/kofloc.co.jp/v2/sateraito_calendar.html">
                 </iframe>
             </div>
-            </div>
-<script>
-    const CalendarManager = {
-        config: {
-            domain: 'kofloc.co.jp',
-            sharedCalendars: [
-                'mfseisan-share@kofloc.co.jp',
-                'ja.japanese#holiday@group.v.calendar.google.com'
-            ],
-            baseOptions: {
-                ctz: 'Asia/Tokyo',
-                mode: 'MONTH',
-                showTitle: '0',
-                showNav: '1',
-                showPrint: '0',
-                showTabs: '1',
-                showTz: '0',
-                showCalendars: '1',
-                showAddEventButton: '1'
-            }
-        },
+        </div>
 
-        updateCalendar() {
-            // 基本URLの構築
-            let calendarUrl = 'https://calendar.google.com/calendar/embed?';
-            
-            // 現在のユーザーのカレンダーを追加（重要）
-            calendarUrl += 'src=primary';
-            
-            // 共有カレンダーを追加
-            this.config.sharedCalendars.forEach(calendar => {
-                calendarUrl += '&src=' + encodeURIComponent(calendar);
-            });
-            
-            // その他のオプションを追加
-            Object.entries(this.config.baseOptions).forEach(([key, value]) => {
-                calendarUrl += `&${key}=${value}`;
-            });
-
-            console.log('Calendar URL:', calendarUrl); // デバッグ用
-
-            const calendarIframe = document.getElementById('google-calendar-main');
-            if (calendarIframe) {
-                // iframeの属性を設定
-                calendarIframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox');
-                calendarIframe.src = calendarUrl;
-            }
-        }
-    };
-
-    // カレンダーのロードハンドラー
-    function handleCalendarLoad(iframe) {
-        try {
-            console.log('Calendar iframe loaded');
-            
-            // iframeのソースURLをログに記録
-            console.log('Loaded URL:', iframe.src);
-            
-            // エラーチェック
-            if (iframe.contentWindow) {
-                console.log('iframe contentWindow is available');
-            }
-        } catch (e) {
-            console.error('Calendar load error:', e);
-        }
-    }
-
-    // 時計の更新関数
-    function updateDateTime() {
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString('ja-JP');
-        document.getElementById('time').textContent = timeStr;
-    }
-
-    updateDateTime();
-    setInterval(updateDateTime, 1000);
-
-    // リサイズ機能の実装
-    const resizeHandle = document.querySelector('.resize-handle');
-    const memoContainer = document.querySelector('.memo-container');
-    const scheduleContainer = document.querySelector('.schedule-container');
-    let isResizing = false;
-    let startX;
-    let startWidth;
-
-    resizeHandle.addEventListener('mousedown', initResize);
-    resizeHandle.addEventListener('touchstart', initResize);
-
-    function initResize(e) {
-        isResizing = true;
-        startX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
-        startWidth = memoContainer.offsetWidth;
-        document.addEventListener('mousemove', resize);
-        document.addEventListener('touchmove', resize);
-        document.addEventListener('mouseup', stopResize);
-        document.addEventListener('touchend', stopResize);
-        document.body.style.cursor = 'col-resize';
-        memoContainer.style.pointerEvents = 'none';
-        scheduleContainer.style.pointerEvents = 'none';
-    }
-
-    function resize(e) {
-        if (!isResizing) return;
-        const currentX = e.type === 'mousemove' ? e.clientX : e.touches[0].clientX;
-        const diff = currentX - startX;
-        const newWidth = Math.min(Math.max(startWidth + diff, 100),
-            memoContainer.parentElement.offsetWidth * 0.8);
-        memoContainer.style.width = `${newWidth}px`;
-        memoContainer.style.overflow = 'hidden';
-        scheduleContainer.style.overflow = 'hidden';
-    }
-
-    function stopResize() {
-        if (!isResizing) return;
-        isResizing = false;
-        document.removeEventListener('mousemove', resize);
-        document.removeEventListener('touchmove', resize);
-        document.removeEventListener('mouseup', stopResize);
-        document.removeEventListener('touchend', stopResize);
-
-        document.body.style.cursor = '';
-        memoContainer.style.pointerEvents = '';
-        scheduleContainer.style.pointerEvents = '';
-        memoContainer.style.overflow = 'hidden';
-        scheduleContainer.style.overflow = 'hidden';
-    }
-
-    resizeHandle.addEventListener('touchmove', function (e) {
-        e.preventDefault();
-    }, { passive: false });
-
-    // タブ切り替え機能
-    const tabs = document.querySelectorAll('.tab');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-
-            const tabId = tab.getAttribute('data-tab');
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                if (content.id === tabId) {
-                    content.classList.add('active');
-                    if (tabId === 'calendar2') {
-                        CalendarManager.updateCalendar();
-                    }
-                }
-            });
-        });
-    });
-
-    // 全画面表示ボタンの機能
-    const fullscreenButton = document.querySelector('.fullscreen-button');
-    fullscreenButton.addEventListener('click', function() {
-        const memoContainer = document.querySelector('.memo-container');
-        const scheduleContainer = document.querySelector('.schedule-container');
-        const resizeHandle = document.querySelector('.resize-handle');
-        
-        if (scheduleContainer.classList.contains('fullscreen')) {
-            scheduleContainer.classList.remove('fullscreen');
-            memoContainer.classList.remove('hidden');
-            resizeHandle.style.display = 'flex';
-            this.textContent = '掲示板非表示';
-        } else {
-            scheduleContainer.classList.add('fullscreen');
-            memoContainer.classList.add('hidden');
-            resizeHandle.style.display = 'none';
-            this.textContent = '掲示板再表示';
-        }
-    });
-
-    // 初期化
-    document.addEventListener('DOMContentLoaded', function() {
-        CalendarManager.updateCalendar();
-    });
-</script>
 </body>
+
 </html>
