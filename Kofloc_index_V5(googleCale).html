@@ -288,9 +288,12 @@
             <div class="tab-content" id="calendar2">
                 <div style="display: flex; height: 100%; gap: 10px;">
                     <div style="flex: 2; height: 100%;">
-                        <iframe id="google-calendar-main" style="border: 0; width: 100%; height: 100%;" frameborder="0"
-                            scrolling="no">
-                        </iframe>
+                        <iframe id="google-calendar-main" 
+    style="border: 0; width: 100%; height: 100%;" 
+    frameborder="0" 
+    allowfullscreen
+    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox">
+</iframe>
                     </div>
                 </div>
             </div>
@@ -303,6 +306,7 @@
 <script>
     const CalendarManager = {
         config: {
+            domain: 'kofloc.co.jp',
             sharedCalendars: [
                 'mfseisan-share@kofloc.co.jp',
                 'ja.japanese#holiday@group.v.calendar.google.com'
@@ -320,68 +324,32 @@
             }
         },
 
-        async init() {
-            // Google APIクライアントの読み込み
-            await this.loadGapiClient();
-            await this.updateCalendar();
-        },
-
-        loadGapiClient() {
-            return new Promise((resolve) => {
-                if (typeof gapi !== 'undefined' && gapi.client) {
-                    resolve();
-                    return;
-                }
-                const script = document.createElement('script');
-                script.src = 'https://apis.google.com/js/api.js';
-                script.onload = () => {
-                    gapi.load('client:auth2', resolve);
-                };
-                document.body.appendChild(script);
+        updateCalendar() {
+            let calendarUrl = 'https://calendar.google.com/calendar/embed?';
+            
+            // Workspaceユーザーのカレンダーを追加（自動で現在のユーザーを検出）
+            calendarUrl += 'authuser=0';
+            
+            // 共有カレンダーを追加
+            this.config.sharedCalendars.forEach(calendar => {
+                calendarUrl += '&src=' + encodeURIComponent(calendar);
             });
-        },
+            
+            // その他のオプションを追加
+            Object.entries(this.config.baseOptions).forEach(([key, value]) => {
+                calendarUrl += `&${key}=${value}`;
+            });
 
-        async updateCalendar() {
-            try {
-                let calendarUrl = 'https://calendar.google.com/calendar/embed?';
+            console.log('Calendar URL:', calendarUrl); // デバッグ用
 
-                // ログインしているユーザーのメールアドレスを取得
-                const userEmail = await this.getUserEmail();
-                if (userEmail) {
-                    calendarUrl += 'src=' + encodeURIComponent(userEmail);
-                }
-
-                // 共有カレンダーを追加
-                this.config.sharedCalendars.forEach(calendar => {
-                    calendarUrl += '&src=' + encodeURIComponent(calendar);
-                });
-
-                // その他のオプションを追加
-                Object.entries(this.config.baseOptions).forEach(([key, value]) => {
-                    calendarUrl += `&${key}=${value}`;
-                });
-
-                const calendarIframe = document.getElementById('google-calendar-main');
-                if (calendarIframe) {
-                    calendarIframe.src = calendarUrl;
-                }
-            } catch (error) {
-                console.error('Calendar update error:', error);
-                this.updateCalendarWithoutEmail();
-            }
-        },
-
-        async getUserEmail() {
-            try {
-                const auth2 = gapi.auth2.getAuthInstance();
-                if (auth2.isSignedIn.get()) {
-                    const user = auth2.currentUser.get();
-                    return user.getBasicProfile().getEmail();
-                }
-                return null;
-            } catch (error) {
-                console.error('Error getting user email:', error);
-                return null;
+            const calendarIframe = document.getElementById('google-calendar-main');
+            if (calendarIframe) {
+                calendarIframe.src = calendarUrl;
+                
+                // iframeのロードイベントを監視
+                calendarIframe.onload = () => {
+                    console.log('Calendar iframe loaded');
+                };
             }
         }
     };
@@ -491,15 +459,6 @@
             this.textContent = '掲示板再表示';
         }
     });
-
-    // カレンダーのロードハンドラー
-    function handleCalendarLoad(iframe) {
-        try {
-            console.log('Calendar loaded successfully');
-        } catch (e) {
-            console.error('カレンダー読み込みエラー:', e);
-        }
-    }
 
     // 初期化
     document.addEventListener('DOMContentLoaded', function() {
