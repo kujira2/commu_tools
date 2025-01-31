@@ -5,8 +5,9 @@
     <!--Ver4.0 2025/1/21-->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <meta http-equiv="Content-Security-Policy"
-        content="frame-src 'self' https://calendar.google.com https://sateraito-apps-calendar.appspot.com https://sateraito-apps-keijiban.appspot.com;">
+        content="frame-src 'self' https://calendar.google.com https://sateraito-apps-calendar.appspot.com https://sateraito-apps-keijiban.appspot.com https://sateraito-apps-myportal.appspot.com;">
     <link rel="icon" href="https://lh3.googleusercontent.com/d/1bTrgBp0jfdkn2n2CgaxwG7yhsiwon1Gh">
     <title>コフロック社内システムリンク集</title>
     <style>
@@ -253,23 +254,66 @@
             }
         },
 
-        updateCalendar() {
-            // より直接的なアプローチ
-            const calendarUrl = 'https://calendar.google.com/calendar/u/0/embed?' +
-                'src=primary' +
-                '&src=' + encodeURIComponent('mfseisan-share@kofloc.co.jp') +
-                '&src=' + encodeURIComponent('ja.japanese#holiday@group.v.calendar.google.com') +
-                '&ctz=Asia/Tokyo' +
-                '&mode=MONTH' +
-                '&showCalendars=1' +
-                '&showTz=0'+
-                '&showTitle=0' +
-                '&showNav=1' +
-                '&showPrint=0';
+        async getUserInfo() {
+            try {
+                // Sateraitoのセッション情報を取得
+                const sateId = document.cookie
+                    .split('; ')
+                    .find(row => row.startsWith('SATEID2='))
+                    ?.split('=')[1];
 
-            const calendarIframe = document.getElementById('google-calendar-main');
-            if (calendarIframe) {
-                calendarIframe.src = calendarUrl;
+                if (!sateId) {
+                    console.error('SATEID2 not found');
+                    return null;
+                }
+
+                // メールアドレスを取得するリクエストを送信
+                const response = await fetch('https://sateraito-apps-myportal.appspot.com/kofloc.co.jp/oid/getusername', {
+                    credentials: 'include',
+                    headers: {
+                        'Cookie': `SATEID2=${sateId}`,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to get user info');
+                const data = await response.json();
+                return data.user_email;
+
+            } catch (error) {
+                console.error('Error getting user info:', error);
+                return null;
+            }
+        },
+
+        async updateCalendar() {
+            let calendarUrl = 'https://calendar.google.com/calendar/embed?';
+
+            try {
+                // ユーザーメールアドレスを取得
+                const userEmail = await this.getUserInfo();
+                if (userEmail) {
+                    calendarUrl += 'src=' + encodeURIComponent(userEmail);
+                }
+
+                // 共有カレンダーを追加
+                this.config.sharedCalendars.forEach(calendar => {
+                    calendarUrl += '&src=' + encodeURIComponent(calendar);
+                });
+
+                // その他のオプションを追加
+                Object.entries(this.config.baseOptions).forEach(([key, value]) => {
+                    calendarUrl += `&${key}=${value}`;
+                });
+
+                calendarUrl += '&authuser=0';
+
+                const calendarIframe = document.getElementById('google-calendar-main');
+                if (calendarIframe) {
+                    calendarIframe.src = calendarUrl;
+                }
+            } catch (error) {
+                console.error('Error updating calendar:', error);
             }
         }
     };
@@ -452,10 +496,10 @@
             <div class="tab-content" id="calendar2">
                 <div style="display: flex; height: 100%; gap: 10px;">
                     <div style="flex: 2; height: 100%;">
-                        <iframe id="google-calendar-main" style="border: 0; width: 100%; height: 100%;" frameborder="0"
-                            scrolling="no"
-                            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox">
-                        </iframe>
+<iframe id="google-calendar-main" style="border: 0; width: 100%; height: 100%;" frameborder="0" scrolling="no"
+    allowfullscreen allow="clipboard-write *"
+    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox">
+</iframe>
                     </div>
                 </div>
             </div>
