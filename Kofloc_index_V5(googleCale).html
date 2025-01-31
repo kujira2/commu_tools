@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <!--Ver4.0 2025/1/21-->
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="frame-src 'self' https://calendar.google.com;">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://lh3.googleusercontent.com/d/1bTrgBp0jfdkn2n2CgaxwG7yhsiwon1Gh">
+    <title>コフロック社内システムリンク集</title>
+    <style>
+        :root {
+            --date-font: 'Arial', sans-serif;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-width: 1000px;
+            width: calc(100%-20px);
+            height:calc(100%-20px);
+            margin: 0 auto;
+            padding: 2px 2px 10px 2px;
+            border-top:1px solid #0c4466;
+            background-color: #f5f5f5;
+            align-items:center;
+        }
+
+        .grid {
+            display: grid;
+            background-color: #0c4466;
+            grid-template-columns: repeat(9, 90px) 1fr;
+            align-items: center;
+            border-radius: 4px 4px 0 0;
+        }
+
+        .datetime-card {
+            background: #0c4466;
+            border-radius: 0 4px 0 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 30px;
+            width: auto;
+            font-family:  "Consolas", monospace;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #dce6ed;
+            border-left:1px solid #dce2e6;
+            margin-left: auto;
+            padding: 0 10px 0 15px; 
+
+        }
+
+        .card {
+            color:white;
+            width: 90px; 
+            height: 30px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border-bottom:1px solid #0c4466;
+            border-left:1px solid #dce2e6;
+        }
+
+        .card:hover {
+            background-color: #dce2e6;
+            color:#0c4466;
+        }
+
+            
+        .card h2 {
+            position: relative;
+            z-index: 2;
+            margin: 0;
+            font-size: 0.8em;
+            padding: 10px;
+            line-height: 0.8;
+        }
+
+        a {
+            color: #0c4466;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .memo-schedule-container {
+            display: flex;
+            gap: 0;
+            margin-top: 2px;
+            height: calc(100vh - 50px); /* 最大高さを設定 */
+            position: relative;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            user-select: none;
+            overflow:hidden;
+        }
+
+        .memo-container {
+            background: white;
+            border-radius: 8px 0 0 8px;
+            padding: 15px;
+            height: calc(100% - 30px);
+            width: 30%;
+            min-width: 100px;
+            max-width: 80%;
+            position: relative;
+            overflow: hidden;
+            transition: width 0.05s ease;
+        }
+
+        .resize-handle {
+            width: 8px;
+            background: #eee;
+            cursor: col-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 10;
+            touch-action: none;
+        }
+        .resize-handle::after {
+            content: "...";
+            color: #666;
+            font-size: 20px;
+            writing-mode: vertical-rl;
+            transform: rotate(0deg);
+            line-height: 1;
+        }
+
+        .schedule-container {
+            background: white;
+            border-radius: 0 8px 8px 0;
+            padding: 8px;
+            height: calc(100% - 16px);/* 最大高さを設定 */
+            flex: 1;
+            min-width: 200px; 
+            overflow: hidden;
+        }
+
+        .tab-container {
+            display: flex;
+            margin-bottom: 8px;
+            margin: 8px 8px 2px 8px;
+            background: white;
+        }
+
+        .tab {
+            padding: 8px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            margin-right: 4px;
+        }
+
+        .tab.active {
+            background: #0c4466;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            height: calc(100% - 50px);
+            margin: 0 8px;
+        }
+
+        .tab-content.active {
+            display: block;
+            height: calc(100% - 50px);
+        }
+
+        .memo-container iframe,
+        .schedule-container iframe,
+        .tab-content iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            overflow: hidden;
+            display: block;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+            zoom: 90%; 
+        }
+
+        .memo-container iframe::-webkit-scrollbar,
+        .schedule-container iframe::-webkit-scrollbar,
+        .tab-content iframe::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }  
+        .fullscreen-button {
+            position: absolute;
+            top: 0;
+            right: 0;
+            padding: 5px 12px;
+            background-color: #bcbba8;
+            color: rgb(255, 255, 255);
+            border: none;
+            border-radius: 0 0 0 4px;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .fullscreen-button:hover {
+            background-color: #ff5100;
+        }
+
+        .schedule-container.fullscreen {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: calc(100% - 15px);
+            z-index: 50;
+            background: white;
+        }
+        .schedule-container.fullscreen iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .memo-container.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>   
+    <div class="grid">
+        <a href="https://mail.google.com/mail/u/0/" target="_blank" class="card" style="border-radius: 4px 0 0 0;">
+            <h2>Gmail</h2>
+        </a>
+
+        <a href="https://tm.minagine.net/index.html" target="_blank" class="card">
+            <h2><strong>MINA</strong>GINE</h2>
+        </a>
+        
+        <a href="https://sxwftbae53.actionpassport.jp/XFV20/logout" target="_blank" class="card">
+            <h2>Action Passport</h2>
+        </a>
+        
+        <a href="http://172.16.200.39/" target="_blank" class="card">
+            <h2>Explanner</h2>
+        </a>      
+        
+        <a href="http://172.16.200.32:9000/menu" target="_blank" class="card">
+            <h2>FES.</h2>
+        </a>
+
+        <a href="https://kofloc.just-db.com/sites/home" target="_blank" class="card">
+            <h2>JUST.DB</h2>
+        </a>
+
+        <a href="https://id.layerx.jp/" target="_blank" class="card">
+            <h2>Bakuraku</h2>
+        </a>
+        
+        <a href="https://hcompass.net/c/login" target="_blank" class="card">
+            <h2>目標評価</h2>
+        </a>
+        
+        <a href="https://cloud.anpikakunin.com/kofloc" target="_blank" class="card">
+            <h2>安否確認</h2>
+        </a>
+        <div class="datetime-card" id="time">
+        </div>
+    </div>
+
+   <div class="memo-schedule-container">
+        <button class="fullscreen-button">掲示板非表示</button>
+        <div class="memo-container">
+            <iframe
+                src="https://sateraito-apps-keijiban.appspot.com/gadget/kofloc.co.jp/default/sateraito_bbs2.html?hl=ja&amp;bbs_name=&amp;nor=5&amp;odnw=true&amp;slb=false&amp;thd=true&amp;tcw=210&amp;safid=false&amp;sdcm=false&amp;sauc=false&amp;acw=75&amp;spoc=true&amp;pcw=55&amp;sdpc=false&amp;dcw=70&amp;sdtc=false&amp;dtcw=120&amp;utf=false&amp;hide_filter_btn=false&amp;sdt=submit_date&amp;ap=1"></iframe>
+        </div>
+        <div class="resize-handle"></div>
+
+        <div class="schedule-container">
+            <div class="tab-container">
+                <button class="tab active" data-tab="calendar1">スケジュール</button>
+                <button class="tab" data-tab="calendar2">Googleカレンダ</button>
+            </div>
+        
+            <div class="tab-content" id="calendar2">
+                <div style="display: flex; height: 100%; gap: 10px;">
+                    <div style="flex: 2; height: 100%;">
+                        <iframe id="google-calendar-main" style="border: 0; width: 100%; height: 100%;" frameborder="0"
+                            scrolling="no" allowfullscreen>
+                        </iframe>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-content active" id="calendar1">
+                <iframe src="https://sateraito-apps-calendar.appspot.com/kofloc.co.jp/v2/sateraito_calendar.html"
+                    onload="handleCalendarLoad(this)">
+                </iframe>
+            </div>
+            </div>
+<script>
+    const CalendarManager = {
+        config: {
+            sharedCalendars: [
+                'mfseisan-share@kofloc.co.jp',
+                'ja.japanese#holiday@group.v.calendar.google.com'
+            ],
+            baseOptions: {
+                ctz: 'Asia/Tokyo',
+                mode: 'MONTH',
+                showTitle: '0',
+                showNav: '1',
+                showPrint: '0',
+                showTabs: '1',
+                showTz: '0',
+                showCalendars: '1',
+                showAddEventButton: '1'
+            },
+            debugElement: null
+        },
+
+        // デバッグ情報の初期化
+        initDebug() {
+            // デバッグ情報表示用の要素を作成
+            const debugDiv = document.createElement('div');
+            debugDiv.style.position = 'fixed';
+            debugDiv.style.top = '10px';
+            debugDiv.style.right = '10px';
+            debugDiv.style.padding = '10px';
+            debugDiv.style.background = 'rgba(0,0,0,0.8)';
+            debugDiv.style.color = 'white';
+            debugDiv.style.zIndex = '9999';
+            debugDiv.style.maxWidth = '400px';
+            debugDiv.style.maxHeight = '200px';
+            debugDiv.style.overflow = 'auto';
+            debugDiv.style.fontSize = '12px';
+            debugDiv.id = 'calendar-debug';
+            document.body.appendChild(debugDiv);
+            this.config.debugElement = debugDiv;
+        },
+
+        // デバッグ情報の表示
+        logDebug(message) {
+            if (this.config.debugElement) {
+                const timestamp = new Date().toLocaleTimeString();
+                this.config.debugElement.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+                // 自動スクロール
+                this.config.debugElement.scrollTop = this.config.debugElement.scrollHeight;
+            }
+        },
+
+        checkGoogleAuthStatus() {
+            try {
+                // Googleアカウントの情報を取得を試みる
+                if (typeof gapi !== 'undefined' && gapi.auth2) {
+                    const auth2 = gapi.auth2.getAuthInstance();
+                    if (auth2) {
+                        const isSignedIn = auth2.isSignedIn.get();
+                        const user = auth2.currentUser.get();
+                        const profile = user.getBasicProfile();
+
+                        this.logDebug(`サインイン状態: ${isSignedIn}`);
+                        if (profile) {
+                            this.logDebug(`メールアドレス: ${profile.getEmail()}`);
+                            this.logDebug(`名前: ${profile.getName()}`);
+                        }
+                    } else {
+                        this.logDebug('auth2インスタンスが見つかりません');
+                    }
+                } else {
+                    this.logDebug('GAPI が利用できません');
+                }
+            } catch (error) {
+                this.logDebug(`認証チェックエラー: ${error.message}`);
+            }
+
+            // クッキー情報の確認
+            this.logDebug('Cookies: ' + document.cookie);
+
+            // 現在のURLの確認
+            this.logDebug('Current URL: ' + window.location.href);
+        },
+
+        updateCalendar() {
+            this.logDebug('カレンダー更新開始');
+
+            let calendarUrl = 'https://calendar.google.com/calendar/embed?';
+            Object.entries(this.config.baseOptions).forEach(([key, value]) => {
+                calendarUrl += `${key}=${value}&`;
+            });
+
+            this.logDebug(`構築されたURL: ${calendarUrl}`);
+
+            const calendarIframe = document.getElementById('google-calendar-main');
+            if (calendarIframe) {
+                calendarIframe.src = calendarUrl;
+                this.logDebug('iframeのsrc属性を更新しました');
+            } else {
+                this.logDebug('カレンダーiframeが見つかりません');
+            }
+
+            // Google認証状態の確認
+            this.checkGoogleAuthStatus();
+        }
+    };
+
+    // 初期化時にデバッグ機能を有効化
+    document.addEventListener('DOMContentLoaded', function () {
+        CalendarManager.initDebug();
+        CalendarManager.updateCalendar();
+    });
+
+
+    // 時計の更新関数
+    function updateDateTime() {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('ja-JP');
+        document.getElementById('time').textContent = timeStr;
+    }
+
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+
+    // リサイズ機能の実装
+    const resizeHandle = document.querySelector('.resize-handle');
+    const memoContainer = document.querySelector('.memo-container');
+    const scheduleContainer = document.querySelector('.schedule-container');
+    let isResizing = false;
+    let startX;
+    let startWidth;
+
+    resizeHandle.addEventListener('mousedown', initResize);
+    resizeHandle.addEventListener('touchstart', initResize);
+
+    function initResize(e) {
+        isResizing = true;
+        startX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
+        startWidth = memoContainer.offsetWidth;
+        document.addEventListener('mousemove', resize);
+        document.addEventListener('touchmove', resize);
+        document.addEventListener('mouseup', stopResize);
+        document.addEventListener('touchend', stopResize);
+        document.body.style.cursor = 'col-resize';
+        memoContainer.style.pointerEvents = 'none';
+        scheduleContainer.style.pointerEvents = 'none';
+    }
+
+    function resize(e) {
+        if (!isResizing) return;
+        const currentX = e.type === 'mousemove' ? e.clientX : e.touches[0].clientX;
+        const diff = currentX - startX;
+        const newWidth = Math.min(Math.max(startWidth + diff, 100),
+            memoContainer.parentElement.offsetWidth * 0.8);
+        memoContainer.style.width = `${newWidth}px`;
+        memoContainer.style.overflow = 'hidden';
+        scheduleContainer.style.overflow = 'hidden';
+    }
+
+    function stopResize() {
+        if (!isResizing) return;
+        isResizing = false;
+        document.removeEventListener('mousemove', resize);
+        document.removeEventListener('touchmove', resize);
+        document.removeEventListener('mouseup', stopResize);
+        document.removeEventListener('touchend', stopResize);
+
+        document.body.style.cursor = '';
+        memoContainer.style.pointerEvents = '';
+        scheduleContainer.style.pointerEvents = '';
+        memoContainer.style.overflow = 'hidden';
+        scheduleContainer.style.overflow = 'hidden';
+    }
+
+    resizeHandle.addEventListener('touchmove', function (e) {
+        e.preventDefault();
+    }, { passive: false });
+
+    // タブ切り替え機能
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            CalendarManager.logDebug(`タブ切り替え: ${tab.getAttribute('data-tab')}`);
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            const tabId = tab.getAttribute('data-tab');
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+                if (content.id === tabId) {
+                    content.classList.add('active');
+                    if (tabId === 'calendar2') {
+                        CalendarManager.updateCalendar();
+                    }
+                }
+            });
+        });
+    });
+
+    // 全画面表示ボタンの機能
+    const fullscreenButton = document.querySelector('.fullscreen-button');
+    fullscreenButton.addEventListener('click', function () {
+        const memoContainer = document.querySelector('.memo-container');
+        const scheduleContainer = document.querySelector('.schedule-container');
+        const resizeHandle = document.querySelector('.resize-handle');
+
+        if (scheduleContainer.classList.contains('fullscreen')) {
+            scheduleContainer.classList.remove('fullscreen');
+            memoContainer.classList.remove('hidden');
+            resizeHandle.style.display = 'flex';
+            this.textContent = '掲示板非表示';
+        } else {
+            scheduleContainer.classList.add('fullscreen');
+            memoContainer.classList.add('hidden');
+            resizeHandle.style.display = 'none';
+            this.textContent = '掲示板再表示';
+        }
+    });
+
+    // カレンダーのロードハンドラー
+    function handleCalendarLoad(iframe) {
+        try {
+            console.log('Calendar loaded successfully');
+            // カレンダーがロードされた後の処理をここに追加
+        } catch (e) {
+            console.error('カレンダー読み込みエラー:', e);
+        }
+    }
+
+    // 初期化
+    document.addEventListener('DOMContentLoaded', function () {
+        CalendarManager.updateCalendar();
+    });
+</script>
+</body>
+</html>
