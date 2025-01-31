@@ -236,7 +236,6 @@
 <script>
     const CalendarManager = {
         config: {
-            domain: 'kofloc.co.jp',
             sharedCalendars: [
                 'mfseisan-share@kofloc.co.jp',
                 'ja.japanese#holiday@group.v.calendar.google.com'
@@ -255,20 +254,18 @@
         },
 
         updateCalendar() {
-            let calendarUrl = 'https://calendar.google.com/calendar/embed?';
-
-            // WorkspaceアカウントとUIの設定
-            calendarUrl += 'wkst=1&bgcolor=%23ffffff&authuser=0';
-
-            // 共有カレンダーを追加
-            this.config.sharedCalendars.forEach(calendar => {
-                calendarUrl += '&src=' + encodeURIComponent(calendar);
-            });
-
-            // その他のオプションを追加
-            Object.entries(this.config.baseOptions).forEach(([key, value]) => {
-                calendarUrl += `&${key}=${value}`;
-            });
+            // より直接的なアプローチ
+            const calendarUrl = 'https://calendar.google.com/calendar/u/0/embed?' +
+                'src=primary' +
+                '&src=' + encodeURIComponent('mfseisan-share@kofloc.co.jp') +
+                '&src=' + encodeURIComponent('ja.japanese#holiday@group.v.calendar.google.com') +
+                '&ctz=Asia/Tokyo' +
+                '&mode=MONTH' +
+                '&showCalendars=1' +
+                '&showTz=0'+
+                '&showTitle=0' +
+                '&showNav=1' +
+                '&showPrint=0';
 
             const calendarIframe = document.getElementById('google-calendar-main');
             if (calendarIframe) {
