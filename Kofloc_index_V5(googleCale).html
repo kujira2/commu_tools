@@ -286,17 +286,19 @@
         
             <!-- Google Calendar用のdiv要素を修正 -->
             <div class="tab-content" id="calendar2">
-                <div style="display: flex; height: 100%; gap: 10px;">
-                    <div style="flex: 2; height: 100%;">
-                        <iframe id="google-calendar-main" 
-    style="border: 0; width: 100%; height: 100%;" 
-    frameborder="0" 
-    allowfullscreen
-    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox">
-</iframe>
-                    </div>
-                </div>
-            </div>
+    <div style="display: flex; height: 100%; gap: 10px;">
+        <div style="flex: 2; height: 100%;">
+            <iframe id="google-calendar-main" 
+                    style="border: 0; width: 100%; height: 100%;" 
+                    frameborder="0" 
+                    scrolling="no"
+                    onload="handleCalendarLoad(this)"
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox">
+            </iframe>
+        </div>
+    </div>
+</div>
+
             <div class="tab-content active" id="calendar1">
                 <iframe src="https://sateraito-apps-calendar.appspot.com/kofloc.co.jp/v2/sateraito_calendar.html"
                     onload="handleCalendarLoad(this)">
@@ -325,10 +327,11 @@
         },
 
         updateCalendar() {
+            // 基本URLの構築
             let calendarUrl = 'https://calendar.google.com/calendar/embed?';
             
-            // Workspaceユーザーのカレンダーを追加（自動で現在のユーザーを検出）
-            calendarUrl += 'authuser=0';
+            // 現在のユーザーのカレンダーを追加（重要）
+            calendarUrl += 'src=primary';
             
             // 共有カレンダーを追加
             this.config.sharedCalendars.forEach(calendar => {
@@ -344,15 +347,29 @@
 
             const calendarIframe = document.getElementById('google-calendar-main');
             if (calendarIframe) {
+                // iframeの属性を設定
+                calendarIframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox');
                 calendarIframe.src = calendarUrl;
-                
-                // iframeのロードイベントを監視
-                calendarIframe.onload = () => {
-                    console.log('Calendar iframe loaded');
-                };
             }
         }
     };
+
+    // カレンダーのロードハンドラー
+    function handleCalendarLoad(iframe) {
+        try {
+            console.log('Calendar iframe loaded');
+            
+            // iframeのソースURLをログに記録
+            console.log('Loaded URL:', iframe.src);
+            
+            // エラーチェック
+            if (iframe.contentWindow) {
+                console.log('iframe contentWindow is available');
+            }
+        } catch (e) {
+            console.error('Calendar load error:', e);
+        }
+    }
 
     // 時計の更新関数
     function updateDateTime() {
