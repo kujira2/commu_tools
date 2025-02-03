@@ -293,6 +293,9 @@
                     await this.serialConnection.sendCommand(
                         ModbusCommands.createWriteControlMode(2)
                     );
+
+                    // モード切り替え後の短い待機時間
+                    await this.sleep(500);  // 500ms待機
                     
                     // Read data during fully closed mode for 10 seconds
                     const samplesFor10Seconds = Math.floor(10000 / readInterval);
