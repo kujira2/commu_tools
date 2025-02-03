@@ -289,11 +289,28 @@
                 for (const setValue of setPoints) {
                     if (this.stopRequested) break;
 
-                    // Set to fully closed mode (2) and wait 10 seconds
+                    // Set to fully closed mode (2) and collect data for 10 seconds
                     await this.serialConnection.sendCommand(
                         ModbusCommands.createWriteControlMode(2)
                     );
-                    await this.sleep(10000); // 10秒待機
+                    
+                    // Read data during fully closed mode for 10 seconds
+                    const samplesFor10Seconds = Math.floor(10000 / readInterval);
+                    for (let i = 0; i < samplesFor10Seconds; i++) {
+                        if (this.stopRequested) break;
+
+                        const response = await this.serialConnection.sendCommand(
+                            ModbusCommands.createReadFlowRateOutput()
+                        );
+
+                        if (response && response.length >= 5) {
+                            const flowValue = (response[3] << 8) | response[4];
+                            const adjustedFlow = this.adjustFlowValueByDecimalPoint(flowValue);
+                            await this.chartManager.updateChart(adjustedFlow);
+                        }
+
+                        await this.sleep(readInterval);
+                    }
 
                     // Set the flow rate
                     await this.serialConnection.sendCommand(
