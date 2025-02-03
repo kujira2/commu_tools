@@ -42,7 +42,7 @@ export class FlowChartManager {
                         },
                         title: {
                             display: true,
-                            text: '出力モニター（5%,10%,20%F.S.刻みで10s間）'
+                            text: '出力モニター（2%,5%,10%,20%F.S.刻みで15s間）'
                         }
                     },
                     scales: {
