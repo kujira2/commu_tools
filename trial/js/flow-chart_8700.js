@@ -53,7 +53,7 @@ export class FlowChartManager {
                                 text: '経過時間 (秒)'
                             },
                             min: 0,
-                            max: 120
+                            max: 240
                         },
                         y: {
                             title: {
@@ -99,7 +99,7 @@ export class FlowChartManager {
         });
 
         // 120秒を超えるデータを削除
-        this.flowData = this.flowData.filter(point => point.x <= 120);
+        this.flowData = this.flowData.filter(point => point.x <= 240);
 
         this.chart.data.datasets[0].data = this.flowData;
         this.chart.update('none');
