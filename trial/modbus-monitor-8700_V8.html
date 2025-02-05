@@ -284,7 +284,7 @@
                 const steps = [0.05, 0.2, 0.4, 0.6, 0.8, 1.0];
                 const setPoints = steps.map(step => Math.floor(this.maxRange * step));
                 const readInterval = 200;  // 200ms間隔でデータ採取
-                const samplesFor15Seconds = Math.floor(15000 / readInterval);  // 15秒分のサンプル数
+                const samplesFor15Seconds = Math.floor(10000 / readInterval);  // 10秒分のサンプル数
 
                 for (const setValue of setPoints) {
                     if (this.stopRequested) break;
@@ -323,7 +323,8 @@
                     // Set to control mode (1) and immediately start reading data
                     await this.serialConnection.sendCommand(
                         ModbusCommands.createWriteControlMode(1)
-                    );
+                    );                       
+                    await this.sleep(20);  // 20ms待機
 
                     // Read flow rate values for 15 seconds
                     for (let i = 0; i < samplesFor15Seconds; i++) {
