@@ -281,7 +281,7 @@
                 this.stopPeriodicUpdate();
                 await this.chartManager.resetChart();
 
-                const steps = [0.02, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0];
+                const steps = [0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0];
                 const setPoints = steps.map(step => Math.floor(this.maxRange * step));
                 const readInterval = 100;  // 100ms間隔でデータ採取
                 const samplesFor15Seconds = Math.floor(15000 / readInterval);  // 15秒分のサンプル数
