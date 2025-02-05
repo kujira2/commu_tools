@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>温度制御・センサーモニタリングシステム</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <link rel="stylesheet" href="3910E_js/3910Estyle.css">
+</head>
+
+<body>
+    <div class="control-panel">
+        <!-- Line選択と測定間隔 -->
+        <div class="line-selector">
+            <h3>Line 選択</h3>
+            <div id="lineSelectors"></div>
+        </div>
+
+        <div class="input-group">
+            <label>測定間隔 (秒):</label>
+            <input type="number" id="intervalInput" value="60" min="1">
+        </div>
+
+        <!-- シリアル接続 -->
+        <div class="connection-status">
+            <div id="connectBtn" class="connect-button disconnected">シリアルポート接続</div>
+        </div>
+
+        <!-- 温度設定 -->
+        <div class="input-group">
+            <label>目標温度:</label>
+            <input type="number" id="tempInput" step="0.1" value="25.0">
+            <button onclick="setTemperature()" class="button">温度設定</button>
+        </div>
+
+        <!-- 測定制御 -->
+        <div class="input-group">
+            <button id="measureBtn" class="button">測定開始</button>
+        </div>
+
+        <div id="statusMessage" class="status"></div>
+    </div>
+
+    <!-- グラフ表示エリア -->
+    <div id="graphContainer" class="graph-container"></div>
+
+    <script src="part1.js"></script>
+    <script src="part2.js"></script>
+    <script src="part3.js"></script>
+</body>
+
+</html>

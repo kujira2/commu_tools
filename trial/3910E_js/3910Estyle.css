@@ -1,0 +1,110 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f5f5f5;
+}
+
+.control-panel {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 5px;
+}
+
+.input-group {
+    margin: 15px 0;
+}
+
+.input-group label {
+    margin-right: 10px;
+}
+
+.input-group input[type="number"] {
+    width: 80px;
+    padding: 5px;
+}
+
+.line-selector {
+    margin: 15px 0;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.line-selector label {
+    display: inline-block;
+    margin: 5px 15px;
+    cursor: pointer;
+}
+
+.connect-button {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    text-align: center;
+    transition: background-color 0.3s;
+}
+
+.connect-button.disconnected {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.connect-button.connected {
+    background-color: #f44336;
+    color: white;
+}
+
+.graph-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+}
+
+.graph-card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.sensor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.sensor-graph {
+    height: 200px;
+    margin-bottom: 15px;
+}
+
+.status {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.status.success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.status.error {
+    background-color: #ffebee;
+    color: #c62828;
+}
