@@ -42,7 +42,7 @@ export class FlowChartManager {
                         },
                         title: {
                             display: true,
-                            text: '出力モニター（2%,5%,10%,20%F.S.刻みで15s間）'
+                            text: '出力モニター（5%,10%,20%F.S.刻みで15s間）'
                         }
                     },
                     scales: {
@@ -53,7 +53,7 @@ export class FlowChartManager {
                                 text: '経過時間 (秒)'
                             },
                             min: 0,
-                            max: 300
+                            max: 280
                         },
                         y: {
                             title: {
@@ -98,8 +98,8 @@ export class FlowChartManager {
             y: value
         });
 
-        // 300秒を超えるデータを削除
-        this.flowData = this.flowData.filter(point => point.x <= 300);
+        // 280秒を超えるデータを削除
+        this.flowData = this.flowData.filter(point => point.x <= 280);
 
         this.chart.data.datasets[0].data = this.flowData;
         this.chart.update('none');
