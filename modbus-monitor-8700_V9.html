@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="print-color-adjust" content="exact">
+    <title>8700 Modbus確認用</title>
+    <link rel="stylesheet" href="js/modbus-styles_8700V7.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>8700MCシリーズModbus仕様確認プログラムV9</h1>
+
+        <div class="top-controls">
+            <div class="comm-panel">
+                <div class="comm-settings">
+                    <div class="setting-item">
+                        <label for="baudRate">通信速度:</label>
+                        <select id="baudRate">
+                            <option value="9600">9600 bps</option>
+                            <option value="19200">19200 bps</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="parity">パリティ:</label>
+                        <select id="parity">
+                            <option value="none">なし (None)</option>
+                            <option value="even">偶数 (Even)</option>
+                            <option value="odd">奇数 (Odd)</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="deviceId">デバイスID:</label>
+                        <input type="number" id="deviceId" min="1" max="247" value="1" style="width: 60px;">
+                    </div>
+                    <button id="connectButton" class="connect-button">接続</button>
+                    <span id="connectionStatus" class="status-text">未接続</span>
+                </div>
+            </div>
+            <div class="test-button-container">
+                <button id="startTest" class="test-button" disabled>流量検査開始</button>
+                <button id="stopTest" class="test-button stop" disabled>停止</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="status-panel">
+                <div class="status-item">
+                    <span class="status-label">RUNキー状態:</span>
+                    <span id="runKeyStatus">読み込み中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">設定モード:</span>
+                    <span id="settingMode">読み込み中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">オートゼロ状態:</span>
+                    <span id="autoZeroStatus">読み込み中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">0-2%表示設定:</span>
+                    <span id="displayMode">読み込み中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">流量レンジ:</span>
+                    <span id="flowRange">読み込み中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">積算初期化:</span>
+                    <button id="resetTotalizer" class="totalizer-button">積算初期化</button>
+                </div>
+            </div>
+
+            <div class="right-content">
+                <div class="chart-container">
+                    <canvas id="flowChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="command-history">
+            <h3>通信履歴</h3>
+            <div id="commandLog" class="command-log"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // 統合されたJS（modbus-commands_8700.js, serial-connection_8700.js, flow-chart_8700.jsを統合）
+
+        // ModbusCommands クラス (modbus-commands_8700.js)
+        class ModbusCommands {
+            static calculateCRC(data, length) {
+                let crc = 0xFFFF;
+                for (let i = 0; i < length; i++) {
+                    crc ^= data[i];
+                    for (let j = 0; j < 8; j++) {
+                        if (crc & 0x0001) {
+                            crc = (crc >> 1) ^ 0xA001;
+                        } else {
+                            crc = crc >> 1;
+                        }
+                    }
+                }
+                return [crc & 0xFF, (crc >> 8) & 0xFF];
+            }
+
+            static createCommand(command) {
+                const crc = this.calculateCRC(command, command.length - 2);
+                command[command.length - 2] = crc[0];
+                command[command.length - 1] = crc[1];
+                return command;
+            }
+
+            // Read Coil Status (FC01)
+            static createReadCoilStatus() {
+                const deviceId = parseInt(document.getElementById('deviceId').value) || 1;
+                const data = new Uint8Array([
+                    deviceId,    // デバイスID（可変）
+                    0x01,       // ファンクションコード
+                    0x00, 0x00, // 開始アドレス (00001~00006)
+                    0x00, 0x06, // レジスタ数
+                    0x00, 0x00  // CRCのためのプレースホルダー
+                ]);
+                return this.createCommand(data);
+            }
+
+            // Read Flow Rate Output (30001)
+            static createReadFlowRateOutput() {
+                const deviceId = parseInt(document.getElementById('deviceId').value) || 1;
+                const data = new Uint8Array([
+                    deviceId,    // デバイスID（可変）
+                    0x04,       // ファンクションコード (Read Input Registers)
+                    0x00, 0x00, // リファレンス番号 30001
+                    0x00, 0x01, // レジスタ数
+                    0x00, 0x00  // CRCのためのプレースホルダー
+                ]);
+                return this.createCommand(data);
+            }
+
+            // Read Flow Rate Range (40028)
+            static createReadFlowRateRange() {
+                const deviceId = parseInt(document.getElementById('deviceId').value) || 1;
+                const data = new Uint8Array([
+                    deviceId,    // デバイスID（可変）
+                    0x03,       // ファンクションコード (Read Holding Registers)
+                    0x00, 0x1B, // リファレンス番号 40028
+                    0x00, 0x01, // レジスタ数
+                    0x00, 0x00  // CRCのためのプレースホルダー
+                ]);
+                return this.createCommand(data);
+            }
+
+            // Read Decimal Point Position (40009)
+            static createReadDecimalPoint() {
+                const deviceId = parseInt(document.getElementById('deviceId').value) || 1;
+                const data = new Uint8Array([
+                    deviceId,    // デバイスID（可変）
+                    0x03,       // ファンクションコード (Read Holding Registers)
+                    0x00, 0x08, // リファレンス番号 40009
+                    0x00, 0x01, // レジスタ数
+                    0x00, 0x00  // CRCのためのプレースホルダー
+                ]);
+                return this.createCommand(data);
+            }
+
+            // Write Flow Rate(40022)
+            static createWriteFlowRateSetpoint(value) {
+                const deviceId = parseInt(document.getElementById('deviceId').value) || 1;
+                const data = new Uint8Array([
+                    deviceId,    // デバイスID（可変）
+                    0x06,       // ファンクションコード (Write Single Register)
+                    0x00, 0x15, // リファレンス番号 40022
+                    (value >> 8) & 0xFF, value & 0xFF, // 設定値
+                    0x00, 0x00  // CRCのためのプレースホルダー
+                ]);
+                return this.createCommand(data);
+            }
+
+            // Write Control Mode (40029)
+            static createWriteControlMode(mode) {
+                const deviceId = parseInt(document.getElementById('deviceId').value) || 1;
+                const data = new Uint8Array([
+                    deviceId,    // デバイスID（可変）
+                    0x06,       // ファンクションコード (Write Single Register)
+                    0x00, 0x1C, // リファレンス番号 40029
+                    0x00, mode, // モード値 (1: control, 2: fullyclosed)
+                    0x00, 0x00  // CRCのためのプレースホルダー
+                ]);
+                return this.createCommand(data);
+            }
+        }
+
+        // SerialConnection クラス (serial-connection_8700.js) - シンプルなバッファリング機能
+        class SerialConnection {
+            constructor() {
+                this.port = null;
+                this.reader = null;
+                this.writer = null;
+                this.monitor = null;
+                this.commandQueue = [];     // コマンドキュー
+                this.isProcessing = false;  // 処理中フラグ
+            }
+
+            setMonitor(monitor) {
+                this.monitor = monitor;
+            }
+
+            async connect() {
+                try {
+                    if (this.port) {
+                        await this.disconnect();
+                        return false;
+                    }
+
+                    const baudRate = parseInt(document.getElementById('baudRate').value);
+                    const parity = document.getElementById('parity').value;
+
+                    this.port = await navigator.serial.requestPort();
+                    await this.port.open({
+                        baudRate: baudRate,
+                        dataBits: 8,
+                        stopBits: 1,
+                        parity: parity,
+                        bufferSize: 255
+                    });
+
+                    // デバッグログ
+                    console.log('Serial port opened successfully');
+
+                    this.reader = this.port.readable.getReader();
+                    this.writer = this.port.writable.getWriter();
+
+                    // デバッグログ
+                    console.log('Reader and writer initialized');
+
+                    return true;
+                } catch (error) {
+                    console.error('Connection error:', error);
+                    if (this.monitor) {
+                        this.monitor.addErrorLog(error);
+                    }
+                    return false;
+                }
+            }
+
+            async disconnect() {
+                try {
+                    this.commandQueue = [];
+                    this.isProcessing = false;
+
+                    if (this.reader) {
+                        await this.reader.cancel();
+                        await this.reader.releaseLock();
+                    }
+                    if (this.writer) {
+                        await this.writer.close();
+                        await this.writer.releaseLock();
+                    }
+                    if (this.port) {
+                        await this.port.close();
+                    }
+                } finally {
+                    this.port = null;
+                    this.reader = null;
+                    this.writer = null;
+                }
+            }
+
+            async readResponse() {
+                if (!this.reader) return null;
+
+                try {
+                    const response = [];
+                    let timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('Response timeout')), 1000);
+                    });
+
+                    // 最初のバイトを読み取る
+                    const firstReadPromise = this.reader.read();
+                    let result;
+
+                    try {
+                        result = await Promise.race([firstReadPromise, timeoutPromise]);
+                    } catch (error) {
+                        console.error('Read timeout:', error);
+                        return null;
+                    }
+
+                    if (result.done) return null;
+                    response.push(...result.value);
+
+                    // Modbusの応答サイズを決定
+                    let expectedLength = this.determineResponseLength(response);
+
+                    // 必要なデータがすべて揃うまで読み取り
+                    while (response.length < expectedLength) {
+                        let readPromise = this.reader.read();
+
+                        try {
+                            result = await Promise.race([readPromise, timeoutPromise]);
+                        } catch (error) {
+                            console.error('Read timeout during data collection:', error);
+                            break;
+                        }
+
+                        if (result.done) break;
+                        response.push(...result.value);
+
+                        // データ長が変わった場合、期待される長さを再計算
+                        if (response.length >= 3) {
+                            expectedLength = this.determineResponseLength(response);
+                        }
+                    }
+
+                    return new Uint8Array(response);
+                } catch (error) {
+                    console.error('Read response error:', error);
+                    if (this.monitor) {
+                        this.monitor.addErrorLog(error);
+                    }
+                    return null;
+                }
+            }
+
+            determineResponseLength(data) {
+                if (data.length < 2) return 8; // 最小のModbus応答サイズ
+
+                const functionCode = data[1];
+
+                // ファンクションコードに基づいて応答の長さを計算
+                if ((functionCode === 1 || functionCode === 2) && data.length >= 3) {
+                    return data[2] + 5; // ヘッダ(3) + データ長 + CRC(2)
+                } else if ((functionCode === 3 || functionCode === 4) && data.length >= 3) {
+                    return data[2] + 5; // ヘッダ(3) + データ長 + CRC(2)
+                } else if (functionCode === 5 || functionCode === 6) {
+                    return 8; // 固定長
+                } else if (functionCode === 15 || functionCode === 16) {
+                    return 8; // 固定長
+                } else if (functionCode > 0x80) {
+                    return 5; // エラー応答
+                }
+
+                return 8; // デフォルト値
+            }
+
+            // シンプルなコマンドキュー処理
+            async processQueue() {
+                if (this.isProcessing || this.commandQueue.length === 0) return;
+
+                this.isProcessing = true;
+
+                while (this.commandQueue.length > 0) {
+                    const { command, resolve, reject } = this.commandQueue.shift();
+
+                    try {
+                        // コマンドを送信
+                        if (this.monitor) {
+                            this.monitor.addLogEntry('send', command, this.getCommandDescription(command));
+                        }
+
+                        if (!this.writer) {
+                            reject(new Error('Writer is not available'));
+                            continue;
+                        }
+
+                        await this.writer.write(command);
+
+                        // 応答を待つ
+                        const response = await this.readResponse();
+
+                        if (response && this.monitor) {
+                            this.monitor.addLogEntry('receive', response, this.getResponseDescription(response));
+                        }
+
+                        resolve(response);
+                    } catch (error) {
+                        console.error('Command execution error:', error);
+                        if (this.monitor) {
+                            this.monitor.addErrorLog(error);
+                        }
+                        reject(error);
+                    }
+
+                    // 次のコマンドの前に少し待機
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+
+                this.isProcessing = false;
+            }
+
+            // コマンドキューを使用するsendCommandメソッド
+            async sendCommand(command) {
+                return new Promise((resolve, reject) => {
+                    this.commandQueue.push({ command, resolve, reject });
+
+                    // キュー処理を開始
+                    if (!this.isProcessing) {
+                        this.processQueue();
+                    }
+                });
+            }
+
+            getCommandDescription(command) {
+                if (!command || command.length < 2) return '';
+
+                const fc = command[1];
+                switch (fc) {
+                    case 0x01: return 'Read Coil Status';
+                    case 0x03:
+                        const addr = (command[2] << 8) | command[3];
+                        switch (addr) {
+                            case 0x08: return 'Read Decimal Point (40009)';
+                            case 0x1B: return 'Read Flow Rate Range (40028)';
+                            default: return `Read Holding Registers (${addr + 40001})`;
+                        }
+                    case 0x04: return 'Read Flow Rate Output (30001)';
+                    case 0x06:
+                        const writeAddr = (command[2] << 8) | command[3];
+                        const value = (command[4] << 8) | command[5];
+                        switch (writeAddr) {
+                            case 0x15: return `Write Flow Rate Setpoint (40022): ${value}`;
+                            case 0x1C: return `Write Control Mode (40029): ${value}`;
+                            default: return `Write Single Register (${writeAddr + 40001}): ${value}`;
+                        }
+                    default: return '';
+                }
+            }
+
+            getResponseDescription(response) {
+                if (!response || response.length < 3) return '';
+
+                const fc = response[1];
+                switch (fc) {
+                    case 0x01: {
+                        const data = response[3];
+                        return `Coil Status: ${data.toString(2).padStart(8, '0')}`;
+                    }
+                    case 0x03:
+                    case 0x04: {
+                        // 符号付き16ビット整数として値を変換
+                        const rawValue = (response[3] << 8) | response[4];
+                        const signedValue = rawValue > 32767 ? rawValue - 65536 : rawValue;
+                        return `Value: ${signedValue}`;
+                    }
+                    case 0x06: {
+                        const value = (response[4] << 8) | response[5];
+                        return `Written Value: ${value}`;
+                    }
+                    default: return '';
+                }
+            }
+
+            isConnected() {
+                return this.port !== null;
+            }
+        }
+
+        // FlowChartManager クラス (flow-chart_8700.js) - マイナス値対応
+        class FlowChartManager {
+            constructor() {
+                this.chart = null;
+                this.flowData = [];
+                this.startTime = null;
+                this.chartInitialized = false;
+                this.maxRange = 0;   // 最大レンジ
+                this.minRange = 0;   // 最小レンジ（マイナス値対応）
+            }
+
+            async initialize() {
+                if (this.chartInitialized) return;
+
+                try {
+                    while (typeof Chart === 'undefined') {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+
+                    const canvas = document.getElementById('flowChart');
+                    if (!canvas) {
+                        console.error('Canvas element not found');
+                        return;
+                    }
+
+                    this.chart = new Chart(canvas, {
+                        type: 'line',
+                        data: {
+                            datasets: [{
+                                label: '流量',
+                                data: [],
+                                borderColor: 'rgb(75, 192, 192)',
+                                tension: 0.1,
+                                pointRadius: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                title: {
+                                    display: true,
+                                    text: '出力モニター（5%,10%,20%F.S.刻みで10s間）'
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    type: 'linear',
+                                    title: {
+                                        display: true,
+                                        text: '経過時間 (秒)'
+                                    },
+                                    min: 0,
+                                    max: 200
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: '流量'
+                                    },
+                                    // Y軸の範囲を設定（マイナス値対応）
+                                    beginAtZero: false,
+                                    suggestedMin: 0,
+                                    suggestedMax: 1
+                                }
+                            }
+                        }
+                    });
+
+                    this.chartInitialized = true;
+                    console.log('Chart initialized successfully');
+                } catch (error) {
+                    console.error('Chart initialization error:', error);
+                }
+            }
+
+            // 新しいテストを開始するメソッド
+            async resetChart() {
+                if (this.chart) {
+                    this.flowData = [];
+                    this.startTime = Date.now();
+                    this.chart.data.datasets[0].data = [];
+                    this.chart.update('none');
+                }
+            }
+
+            async startNewTest() {
+                await this.resetChart();
+            }
+
+            async updateChart(value) {
+                if (!this.chartInitialized || !this.chart) {
+                    await this.initialize();
+                }
+
+                if (!this.startTime) {
+                    this.startTime = Date.now();
+                }
+
+                const elapsed = (Date.now() - this.startTime) / 1000;
+                this.flowData.push({
+                    x: elapsed,
+                    y: value
+                });
+
+                // 200秒を超えるデータを削除
+                this.flowData = this.flowData.filter(point => point.x <= 200);
+
+                // データの最小値と最大値を計算してY軸のスケールを適切に設定
+                if (this.flowData.length > 0) {
+                    const values = this.flowData.map(point => point.y);
+                    const min = Math.min(...values);
+                    const max = Math.max(...values);
+
+                    // 負の値がある場合、Y軸の最小値を更新
+                    if (min < 0) {
+                        this.chart.options.scales.y.suggestedMin = min * 1.2;
+                    } else {
+                        this.chart.options.scales.y.suggestedMin = Math.min(0, this.minRange * 1.2);
+                    }
+
+                    // 最大値を更新
+                    this.chart.options.scales.y.suggestedMax = Math.max(max * 1.2, this.maxRange * 1.2);
+                }
+
+                this.chart.data.datasets[0].data = this.flowData;
+                this.chart.update('none');
+                console.log(`Updated chart with value: ${value} at time: ${elapsed}`);
+            }
+
+            // 流量レンジを設定するメソッド（マイナス値対応）
+            setMaxRange(range) {
+                this.maxRange = parseFloat(range);
+
+                // 負の値も考慮して最小レンジを設定
+                this.minRange = -this.maxRange;
+
+                if (this.chart && this.chart.options.scales.y) {
+                    this.chart.options.scales.y.suggestedMax = this.maxRange * 1.2;
+                    this.chart.options.scales.y.suggestedMin = this.minRange * 1.2;
+                    this.chart.update('none');
+                }
+            }
+
+            async setYAxisUnit(unit) {
+                if (!this.chartInitialized || !this.chart) return;
+
+                this.chart.options.scales.y.title.text = `流量`;
+                this.chart.update('none');
+            }
+
+            async clear() {
+                if (!this.chartInitialized || !this.chart) return;
+
+                this.flowData = [];
+                this.chart.data.datasets[0].data = [];
+                this.chart.update('none');
+            }
+        }
+
+        // ModbusMonitor クラス - 値がマイナスにも対応
+        class ModbusMonitor {
+            constructor() {
+                this.serialConnection = new SerialConnection();
+                this.serialConnection.setMonitor(this);
+                this.chartManager = new FlowChartManager();
+                this.isTestRunning = false;
+                this.maxRange = 0;
+                this.decimalPoint = 0;
+                this.updateInterval = null;
+                this.stopRequested = false;
+                this.commandLog = document.getElementById('commandLog');
+            }
+
+            addLogEntry(type, data, description = '') {
+                const now = new Date();
+                const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now.getMilliseconds().toString().padStart(3, '0')}`;
+
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type}`;
+
+                const hexData = Array.from(data)
+                    .map(byte => byte.toString(16).padStart(2, '0').toUpperCase())
+                    .join(' ');
+
+                entry.textContent = `${timestamp} ${type === 'send' ? '→' : '←'} ${hexData} ${description}`;
+                this.commandLog.insertBefore(entry, this.commandLog.firstChild);
+
+                while (this.commandLog.children.length > 100) {
+                    this.commandLog.removeChild(this.commandLog.lastChild);
+                }
+            }
+
+            addErrorLog(error) {
+                const entry = document.createElement('div');
+                entry.className = 'log-entry error';
+                entry.textContent = `${new Date().toLocaleTimeString()} ERROR: ${error.message || error}`;
+                this.commandLog.insertBefore(entry, this.commandLog.firstChild);
+            }
+
+            async initialize() {
+                try {
+                    console.log('Initializing ModbusMonitor...');
+                    if (typeof Chart === 'undefined') {
+                        console.error('Chart.js is not loaded');
+                        throw new Error('Chart.js is not loaded');
+                    }
+
+                    await this.chartManager.initialize();
+                    this.setupEventListeners();
+
+                    console.log('ModbusMonitor initialized successfully');
+                } catch (error) {
+                    console.error('ModbusMonitor initialization error:', error);
+                    const errorDiv = document.createElement('div');
+                    errorDiv.style.color = 'red';
+                    errorDiv.textContent = `初期化エラー: ${error.message}`;
+                    document.querySelector('.chart-container').prepend(errorDiv);
+                }
+            }
+
+            async determineFlowUnit() {
+                try {
+                    const rangeResponse = await this.serialConnection.sendCommand(
+                        ModbusCommands.createReadFlowRateRange()
+                    );
+
+                    const decimalResponse = await this.serialConnection.sendCommand(
+                        ModbusCommands.createReadDecimalPoint()
+                    );
+
+                    if (!rangeResponse || !decimalResponse) {
+                        console.error('Failed to read flow parameters');
+                        document.getElementById('flowRange').textContent = 'エラー';
+                        return;
+                    }
+
+                    const range = (rangeResponse[3] << 8) | rangeResponse[4];
+                    const decimalPoint = (decimalResponse[3] << 8) | decimalResponse[4];
+
+                    this.maxRange = range;
+                    this.decimalPoint = decimalPoint;
+
+                    const adjustedRange = (range / Math.pow(10, decimalPoint)).toFixed(decimalPoint);
+                    document.getElementById('flowRange').textContent = adjustedRange;
+
+                    this.chartManager.setMaxRange(adjustedRange);
+
+                    console.log(`Flow range: ${adjustedRange} (Raw: ${range}, DP: ${decimalPoint})`);
+                } catch (error) {
+                    console.error('Error determining flow parameters:', error);
+                    document.getElementById('flowRange').textContent = 'エラー';
+                    this.addErrorLog(error);
+                }
+            }
+
+            async updateCoilStatus() {
+                const response = await this.serialConnection.sendCommand(
+                    ModbusCommands.createReadCoilStatus()
+                );
+                if (!response) return;
+
+                if (response && response.length >= 4) {
+                    const statusByte = response[3];
+                    document.getElementById('runKeyStatus').textContent =
+                        (statusByte & 0x01) ? 'RUNキー使用中' : 'RUNキー不使用';
+                    document.getElementById('settingMode').textContent =
+                        (statusByte & 0x02) ? 'アナログ設定' : 'デジタル設定';
+                    document.getElementById('autoZeroStatus').textContent =
+                        (statusByte & 0x10) ? 'オートゼロ使用中' : 'オートゼロ不使用';
+                    document.getElementById('displayMode').textContent =
+                        (statusByte & 0x20) ? '0-2％の時0表示' : '0-2%範囲表示';
+                }
+            }
+
+            async updateFlowRate() {
+                try {
+                    console.log('Sending Read Flow Rate Output command...');
+                    const command = ModbusCommands.createReadFlowRateOutput();
+                    console.log('Command created:', Array.from(command).map(b => b.toString(16).padStart(2, '0')).join(' '));
+
+                    const response = await this.serialConnection.sendCommand(command);
+                    console.log('Response received:', response ? Array.from(response).map(b => b.toString(16).padStart(2, '0')).join(' ') : 'null');
+
+                    if (!response) {
+                        console.warn('No response received for flow rate query');
+                        return;
+                    }
+
+                    if (response.length >= 5) {
+                        // 符号付き16ビット整数として処理
+                        const rawValue = (response[3] << 8) | response[4];
+                        const flowValue = rawValue > 32767 ? rawValue - 65536 : rawValue;
+                        const adjustedFlow = this.adjustFlowValueByDecimalPoint(flowValue);
+                        await this.chartManager.updateChart(adjustedFlow);
+                        console.log(`Current flow value: ${adjustedFlow} (raw: ${rawValue})`);
+                    } else {
+                        console.warn(`Invalid response length for flow rate: ${response.length}`);
+                    }
+                } catch (error) {
+                    console.error('Error updating flow rate:', error);
+                    this.addErrorLog(error);
+                }
+            }
+
+            setupEventListeners() {
+                document.getElementById('connectButton').addEventListener('click', async () => {
+                    if (!this.serialConnection.isConnected()) {
+                        const connected = await this.serialConnection.connect();
+                        if (connected) {
+                            document.getElementById('connectionStatus').textContent = '接続済み';
+                            document.getElementById('startTest').disabled = false;
+                            document.getElementById('stopTest').disabled = true; // 初期状態では停止ボタンは無効
+                            document.getElementById('connectButton').textContent = '切断';
+
+                            await this.sleep(500);
+                            await this.determineFlowUnit();
+                            await this.updateCoilStatus();
+                            await this.chartManager.startNewTest();
+                            this.startPeriodicUpdate();
+                        }
+                    } else {
+                        await this.serialConnection.disconnect();
+                        document.getElementById('connectionStatus').textContent = '未接続';
+                        document.getElementById('startTest').disabled = true;
+                        document.getElementById('stopTest').disabled = true;
+                        document.getElementById('connectButton').textContent = '接続';
+                        this.stopPeriodicUpdate();
+                    }
+                });
+
+                document.getElementById('startTest').addEventListener('click',
+                    async () => await this.runFlowTest());
+
+                document.getElementById('stopTest').addEventListener('click',
+                    async () => await this.stopFlowTest());
+
+                const resetTotalizerButton = document.getElementById('resetTotalizer');
+                resetTotalizerButton.addEventListener('click', () => {
+                    if (!resetTotalizerButton.classList.contains('active')) {
+                        resetTotalizerButton.classList.add('active');
+                        resetTotalizerButton.textContent = '積算初期化完了';
+                    } else {
+                        resetTotalizerButton.classList.remove('active');
+                        resetTotalizerButton.textContent = '積算初期化';
+                    }
+                });
+            }
+
+            adjustFlowValueByDecimalPoint(value) {
+                return value / Math.pow(10, this.decimalPoint);
+            }
+
+            async runFlowTest() {
+                if (this.isTestRunning) return;
+
+                this.isTestRunning = true;
+                this.stopRequested = false;
+                document.getElementById('startTest').disabled = true;
+                document.getElementById('stopTest').disabled = false;
+
+                try {
+                    this.stopPeriodicUpdate();
+                    await this.chartManager.resetChart();
+
+                    // テスト開始時刻を保存
+                    const testStartTime = Date.now();
+
+                    const steps = [0.05, 0.2, 0.4, 0.6, 0.8, 1.0];
+                    const setPoints = steps.map(step => Math.floor(this.maxRange * step));
+                    const readInterval = 200;  // 200ms間隔でデータ採取
+                    const samplesFor12Seconds = Math.floor(12000 / readInterval);  // 12秒分のサンプル数
+
+                    for (const setValue of setPoints) {
+                        if (this.stopRequested) break;
+
+                        // Set to fully closed mode (2) and collect data for 10 seconds
+                        await this.serialConnection.sendCommand(
+                            ModbusCommands.createWriteControlMode(2)
+                        );
+
+                        // モード切り替え後の短い待機時間
+                        await this.sleep(200);  // 200ms待機
+
+                        // Read data during fully closed mode for 11.8 seconds
+                        const samplesFor10Seconds = Math.floor(11800 / readInterval);
+                        for (let i = 0; i < samplesFor10Seconds; i++) {
+                            if (this.stopRequested) break;
+
+                            const response = await this.serialConnection.sendCommand(
+                                ModbusCommands.createReadFlowRateOutput()
+                            );
+
+                            if (response && response.length >= 5) {
+                                // 符号付き16ビット整数として処理
+                                const rawValue = (response[3] << 8) | response[4];
+                                const flowValue = rawValue > 32767 ? rawValue - 65536 : rawValue;
+                                const adjustedFlow = this.adjustFlowValueByDecimalPoint(flowValue);
+                                await this.chartManager.updateChart(adjustedFlow);
+                            }
+
+                            await this.sleep(readInterval);
+                        }
+
+                        // Set the flow rate
+                        await this.serialConnection.sendCommand(
+                            ModbusCommands.createWriteFlowRateSetpoint(setValue)
+                        );
+
+                        // Set to control mode (1) and immediately start reading data
+                        await this.serialConnection.sendCommand(
+                            ModbusCommands.createWriteControlMode(1)
+                        );
+                        await this.sleep(20);  // 20ms待機
+
+                        // Read flow rate values for 12 seconds
+                        for (let i = 0; i < samplesFor12Seconds; i++) {
+                            if (this.stopRequested) break;
+
+                            const response = await this.serialConnection.sendCommand(
+                                ModbusCommands.createReadFlowRateOutput()
+                            );
+
+                            if (response && response.length >= 5) {
+                                // 符号付き16ビット整数として処理
+                                const rawValue = (response[3] << 8) | response[4];
+                                const flowValue = rawValue > 32767 ? rawValue - 65536 : rawValue;
+                                const adjustedFlow = this.adjustFlowValueByDecimalPoint(flowValue);
+                                await this.chartManager.updateChart(adjustedFlow);
+                            }
+
+                            await this.sleep(readInterval);
+
+                            // 200秒経過したかチェック（テスト強制終了）
+                            const testRuntime = (Date.now() - testStartTime) / 1000;
+                            if (testRuntime >= 200) {
+                                console.log('Test time limit reached (200s)');
+                                this.stopRequested = true;
+                                break;
+                            }
+                        }
+
+                        // 200秒経過していたらループ終了
+                        const testRuntime = (Date.now() - testStartTime) / 1000;
+                        if (testRuntime >= 200) {
+                            break;
+                        }
+                    }
+
+                    // テスト終了処理
+                    console.log('Finalizing test...');
+                    await this.serialConnection.sendCommand(
+                        ModbusCommands.createWriteFlowRateSetpoint(0)
+                    );
+                    await this.sleep(1000);
+
+                    await this.serialConnection.sendCommand(
+                        ModbusCommands.createWriteControlMode(2)
+                    );
+
+                } catch (error) {
+                    console.error('Flow test error:', error);
+                    this.addErrorLog(error);
+                } finally {
+                    // テスト終了ステータス更新
+                    this.isTestRunning = false;
+                    this.stopRequested = false;
+                    document.getElementById('startTest').disabled = false;
+                    document.getElementById('stopTest').disabled = true; // 明示的に無効化
+                    console.log('Test completed, buttons updated');
+                    this.startPeriodicUpdate();
+                }
+            }
+
+            async stopFlowTest() {
+                if (!this.isTestRunning) return;
+
+                console.log('Stopping flow test...');
+                this.stopRequested = true;
+                document.getElementById('stopTest').disabled = true;
+
+                try {
+                    await this.serialConnection.sendCommand(
+                        ModbusCommands.createWriteFlowRateSetpoint(0)
+                    );
+                    await this.sleep(1000);
+
+                    await this.serialConnection.sendCommand(
+                        ModbusCommands.createWriteControlMode(2)
+                    );
+
+                    // グラフをクリアしないように変更 - データを保持
+                    // await this.chartManager.clear();
+
+                } catch (error) {
+                    console.error('Stop flow test error:', error);
+                    this.addErrorLog(error);
+                } finally {
+                    this.isTestRunning = false;
+                    this.stopRequested = false;
+                    document.getElementById('startTest').disabled = false;
+                    document.getElementById('stopTest').disabled = true; // 停止後は無効化状態を維持
+                    console.log('Test stopped, buttons updated');
+                    this.startPeriodicUpdate();
+                }
+            }
+
+            startPeriodicUpdate() {
+                this.stopPeriodicUpdate();
+                console.log('Starting periodic updates');
+                this.updateInterval = setInterval(async () => {
+                    try {
+                        console.log('Updating coil status...');
+                        await this.updateCoilStatus();
+                        console.log('Updating flow rate...');
+                        await this.updateFlowRate();
+                    } catch (error) {
+                        console.error('Periodic update error:', error);
+                        this.addErrorLog(error);
+                    }
+                }, 1000);
+            }
+
+            stopPeriodicUpdate() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                    this.updateInterval = null;
+                }
+            }
+
+            sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        // アプリケーション初期化
+        if ('serial' in navigator) {
+            const monitor = new ModbusMonitor();
+            monitor.initialize();
+        } else {
+            alert('このブラウザはWeb Serial APIをサポートしていません。\nChrome/Edge等の対応ブラウザをご使用ください。');
+        }
+    </script>
+</body>
+
+</html>
