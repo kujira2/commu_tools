@@ -1,0 +1,2084 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>温度・流量 総合制御インターフェース</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #f0f0f0;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        h2 {
+            color: #333;
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        h2 {
+            display: block;
+            font-size: 1.5em;
+            margin-block-start: 0.3em;
+            margin-block-end: 0.3em;
+            margin-inline-start: 0px;
+            margin-inline-end: 0px;
+            font-weight: bold;
+        }
+        h3 {
+            display: block;
+            margin-block-start: 0.5em;
+            margin-block-end: 0.5em;
+            margin-inline-start: 0px;
+            margin-inline-end: 0px;
+            color: #333;
+            margin-top: 5px;
+            padding-bottom: 5px;
+        }
+
+        h5 {
+            display: block;
+            margin-block-start: 0.5em;
+            margin-block-end: 0.5em;
+            margin-inline-start: 0px;
+            margin-inline-end: 0px;
+        }
+
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 5px;
+        }
+        .display-area {
+            padding-left:30px;
+        }
+
+        .control-panel_left {
+            flex: 1;
+            max-width: 300px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .control-panel_right {
+            flex: 1;
+            min-width: 300px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .display-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+
+        .display-block {
+            flex: 1;
+            min-width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            background-color: #f5f5f5;
+        }
+
+        .temperature-display {
+            background-color: #e8f5e9;
+            padding: 8px;
+            border-radius: 5px;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .flow-display {
+            background-color: #e3f2fd;
+            padding: 5px 0 5px 15px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .connection-area {
+            background-color: #fffde7;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-bottom: 5px;
+        }
+
+        .device-settings {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-bottom: 5px;
+        }
+
+        .device-id-settings {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .device-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .manual-control {
+            background-color: #f0f7ff;
+            padding: 5px 15px 5px 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-bottom: 5px;
+        }
+
+        .auto-control {
+            background-color: #fff8e1;
+            padding: 5px 15px 5px 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-bottom: 5px;
+        }
+
+        .progress-container {
+            margin-top: 15px;
+            position: relative;
+        }
+
+        .progress-bar { 
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .pesent {
+            position: absolute;
+            top:10%;
+            left:50%;
+            z-index: 2;
+        }
+
+        #progress {
+            width: 0%;
+            height: 100%;
+            background-color: #4CAF50;
+            transition: width 0.5s;
+        }
+
+        button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-right: 5px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .device-id-input {
+            width: 60px;
+            text-align: right;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-left: 10px;
+            font-size: 13px;
+        }
+
+        .connected {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .disconnected {
+            background-color: #f44336;
+            color: white;
+        }
+
+        label {
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+
+        .voltage-display {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+
+        .voltage-values {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 0px;
+            align-items: center;
+        }
+
+        .automation-table-container {
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background: #fff;
+            border-radius:5px;
+        }
+
+        #automationTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        #automationTable th,
+        #automationTable td {
+            border: 1px solid #ddd;
+            padding: 4px 8px;
+            height: 24px;
+        }
+
+        #automationTable th {
+            background-color: #f3f3f3;
+            font-weight: normal;
+            text-align: center;
+        }
+
+        #automationTable input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            padding: 2px 4px;
+            margin: 0;
+            box-sizing: border-box;
+            background: transparent;
+            font-size: 14px;
+            text-align: right;
+        }
+
+        #automationTable input:disabled {
+            color: #666;
+            background-color: #f9f9f9;
+        }
+
+        .automation-controls {
+            margin: 10px 0;
+            padding: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .mode-button,
+        .control-button {
+            width: 100px;
+            height: 60px;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .mode-on {
+            background-color: #2196F3;
+        }
+
+        .mode-off {
+            background-color: #9E9E9E;
+        }
+
+        .control-on {
+            background-color: #F44336;
+        }
+
+        .control-off {
+            background-color: #9E9E9E;
+        }
+
+        .status-log {
+            margin-top: 5px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f1f1f1;
+            min-height: 20px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        h4 {
+            display: block;
+            margin-block-start: 0.5em;
+            margin-block-end: 0.5em;
+            margin-inline-start: 0px;
+            margin-inline-end: 0px;
+            font-weight: bold;
+            unicode-bidi: isolate;
+        }
+
+        .ver {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            float: right;
+        }
+        
+        /* アラームダイアログのスタイル */
+        .alarm-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            border: 2px solid #F44336;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            min-width: 300px;
+            text-align: center;
+        }
+        
+        .alarm-dialog h3 {
+            color: #F44336;
+            margin-top: 0;
+        }
+        
+        .alarm-dialog button {
+            margin-top: 15px;
+            padding: 8px 20px;
+        }
+        
+        .alarm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <div class="ver">Ver2.02</div>
+        <h2>温度・流量 総合制御インターフェース</h2>
+
+
+        <!-- 接続コントロール -->
+        <div class="connection-area">
+            <button id="connectButton">接続</button>
+            <button id="disconnectButton" disabled>切断</button>
+            <span id="connectionStatus" class="status disconnected">未接続</span>
+            <span id="statusMessage" style="margin-left: 5px;"></span>
+        </div>
+
+        <div class="dashboard" style="display: flex; margin-top: 5px;">
+            <!-- 左側: 温度制御パネル (40%) -->
+            <div class="control-panel_left" style="width: 40%; margin-right: 5px;">
+                <h3>温度制御</h3>
+
+                <div class="operation-mode">
+                    <div style="display: flex; align-items: center; width: 100%;">
+                        <div class="mode-label" style="margin-right: 5px;">運転モード</div>
+                        <button id="modeButton" class="mode-button mode-off" disabled>定値運転<br>Start</button>
+                        <button id="controlButton" class="control-button control-off" disabled
+                            style="margin-left: 5px;">運転<br>OFF</button>
+                    </div>
+                </div>
+
+                <div class="temperature-display">
+                    <div>現在温度: <span id="temperatureValue" style="color:#2196F3;padding-left:30px;">--.-</span> ℃</div>
+                    <div>設定温度: <span id="setpointValue" style="color:#f3215d;padding-left:30px;">--.-</span> ℃</div>
+                </div>
+
+                <div class="temperature-control" style="margin-top: 30px;">
+                    <h4>温度調整</h4>
+                    <div class="temp-control-container">
+                        <div class="temp-settings">
+                            <label>
+                                温度設定 (0-60.0℃):
+                                <input type="number" id="tempSetpoint" value="25.0" min="0" max="60" step="0.1"
+                                    disabled>
+                            </label>
+                            <div style="margin-top: 10px;">
+                                <button id="setTemp" disabled>温度設定</button>
+                                <button id="return25" disabled>25℃復帰</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timer-control">
+                    <h4>タイマー制御</h4>
+                    <label>
+                        タイマー運転時間 (分):
+                        <input type="number" id="timerDuration" value="0" min="0" max="5000" disabled>
+                    </label>
+                    <br>
+                    <label>
+                        タイマー終了時温度 (0-60.0℃):
+                        <input type="number" id="timerTemp" value="25.0" min="0" max="60" step="0.1" disabled>
+                    </label>
+                    <div style="margin-top: 10px;">
+                        <button id="startTimer" disabled>タイマー開始</button>
+                        <button id="stopTimer" disabled>タイマー停止</button>
+                    </div>
+                    <div style="margin-top: 5px;">
+                        <label>
+                            <input type="checkbox" id="syncDataCollection" disabled> データ採取と連動
+                        </label>
+                    </div>
+                    <div style="margin-top: 5px;">
+                        <label>
+                            <input type="checkbox" id="timerAlarm" disabled> タイマー完了後アラーム
+                        </label>
+                    </div>
+                    <div class="timer-display" id="timerDisplay">残り時間: --:--</div>
+                </div>
+            </div>
+
+            <!-- 右側: 流量制御パネル (60%) -->
+            <div class="control-panel_right" style="width: 60%;">
+                <h3>流量制御</h3>
+                <div class="device-settings">
+                    <h4>デバイス設定</h4>
+                    <div class="device-id-settings">
+                        <div class="device-row">
+                            <label>設定器ID:</label>
+                            <input type="text" id="settingDeviceId" class="device-id-input" maxlength="3" value="1">
+                            <div  class="display-area">CR-400設定器 FS値: <span id="id1-fullscale" style="color:#2196F3;font-weight: bold;">--</span></div>
+                        </div>
+                        <div class="device-row">
+                            <label>表示器ID:</label>
+                            <input type="text" id="displayDeviceId" class="device-id-input" maxlength="3" value="2">
+                            <div  class="display-area">CR-400表示器 FS値: <span id="id2-fullscale" style="color:#f3215d;font-weight: bold;">--</span></div>
+                        </div>
+                        <button id="saveDeviceSettings" disabled>ID設定保存</button>
+                    </div>
+                </div>
+
+                <div class="manual-control">
+                    <h4>手動流量設定 [%]</h4>
+                    <div class="control-buttons">
+                        <label>パーセンテージ (0-100.0): </label>
+                        <input type="number" id="percentInput" step="0.1" min="0" max="100.0" disabled>
+                        <button id="writeButton" disabled>流量設定</button>
+                        <button id="closeButton" disabled>全閉</button>
+                    </div>
+                    <div class="voltage-display">
+                        <div class="voltage-values">
+                            <h5>出力電圧:</h5>
+                            <div>設定器: <span id="currentVoltage1" style="color:#2196F3;font-weight: bold;">0.000 [V]</span></div>
+                            <div>表示器: <span id="currentVoltage2" style="color:#f3215d;font-weight: bold;">0.000 [V]</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="auto-control">
+                    <h4>自動流量設定</h4>
+                    <div class="automation-table-container">
+                        <table id="automationTable">
+                            <thead>
+                                <tr>
+                                    <th>設定値 (%)</th>
+                                    <th>時間 (秒)</th>
+                                    <th>設定器出力 (V)</th>
+                                    <th>表示器出力 (V)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="percent-input" maxlength="6" disabled></td>
+                                    <td><input type="text" class="time-input" maxlength="3" disabled></td>
+                                    <td><input type="text" disabled></td>
+                                    <td><input type="text" disabled></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="automation-controls">
+                            <button id="addRow" disabled>行追加</button>
+                            <button id="removeRow" disabled>行削除</button>
+                            <button id="startAutomation" disabled>開始</button>
+                            <button id="stopAutomation" disabled>停止</button>
+                            <button id="exportCSV" disabled>CSV出力</button>
+                        </div>
+
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div id="progress"></div>
+                            </div>
+                            <div class="pesent" id="progressText">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ステータス表示 -->
+        <div class="status-log" id="statusText"></div>
+        
+        <!-- アラーム用の音声 -->
+        <audio id="alarmSound" preload="auto">
+            <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLHOt3r5nKw0tdqPNtGE5GzGDo8BqUEVIaJOkfVFaVnCWmG5HQlx/qrZsKg0vd77oq0gHFVqj3MRsMAcZRYzE1rJ6Rw8mSYG7xZZxVQgnPGile2NsWDlEXn2PdGp0gZ6xmHFdU1lpeYB6aV1qe5Glim1FMUFwqrypcCgPK2jE6ceuYi4LGj199OCwWDMVLm2l0LVxSxgZPHm1z7uOUiQMKHCqyK5rNAceT6DZypRkNAYtWpu+oGxeRk9RXHBwZHR/g35zX01PWnB8eGhXVFeEnrercUgnI2y52cKkdkoVKFiEt7WOdWRCJy9braWDeXl1YDwqN2eXs7CSfmZBJT1qpbuzmWtEJUBSjLOzl1wLEEx9pZJ0XWRpbGxVJw9EdLDI3sCubUUcBypWksjj1bJKBglSmMPExpxTBRRforC4o3RKMCQ9cJeqmIBpbld2ks7h06dREA9Dh9fz58uIUA0PL1uSt72PYDgLIXTK7tWziWQtFD2B0ezXnFwhrMTczqpaJS5fjK/HommQ0/zoxhumxr/OsXFNRHpLD0J2rLvVsEojAYDBMh5IbXOXr66eXThMTEB7pNN8N6Cc9PvowhlVi25xdxJltdvs1WE/MTt1l6WWfnRFAjx1mcXNrHtJKCpQc5ONcmBndIB5ZUtJVWmEjpOShGxRP0HaxLc+U1peYR0OF9/t+OBtRUguRW5xZlJieoV9aAHlunZLpnKD5kCCsrrR1a6DxsK/X5apNs4ddK+JMwatFqeP0aLBAAkYLJOQmHlcSHUxzBHYfOqYPM2RiKEm/D5dktX/XHgc5xqtkpuqgkgqh91pG+GFqUVIWs2lk3hn/zNYvLuaAQEAhPBcGNqfMPZzxaqM90s5Z6eh8aBdp8q7cPrXOHU5JrWF7WXekwDLq4j6Pl6X1jLi1saNHMR9oD9JTr3TrLUCCjFPn2YZ2uLpxl8QzlM8Uat6qUDHcacpbWZkKjlXr9LQHB4D/Q0bPLZqyFWgRQDujgpZTuV0qFGZlTv8EycpLgY54JYNxxJKE1Sio5Bndb9Sno0hZ1FbWnNuasO5g4Q6YCJ4cWWDbYEADRk1fZN3ZbZv/3YJeZJDYkghzWK57Lg2f6a8wv1SzZXJpKvKu+CjYS9+Z7KLkl/NztAGcw1XmJqKnyx/KXnZ5eS1xcdPkYt3AUBUr5mXgQxggFHj9YSIiD2SlwgCYsJdrdLkj0gYJhA1aNMwA6zX7QhW5UlBhLVBLj0E9rfmpw5TIiRUTuXi7iNxr2GZU0FNRYFHW/0sO36cq3xQGF/V2DXAC+mZm1hcmFmKOA4YSJNDj+GqF20yhF+asbCeAQIOFVJxj57B3ciRyLjJ7OwQR6GUWmZoYmxoM03UmJF6T05OhO2SYqU4QrGISmZqZEBtlFrbA1pPYJIBFYNLZJ/UMU7wltOz9yZV4HRRaXJ2dVMiceuYQmh7g4Vzo6QDJVnrhLRL4BcXJC5JUmZsaWUopdzjAkWKsIR2L7fwcMvFRFSFrMrIJKM2yNjXUQRDkvp5hAp8hXXa5jOEbVfFk5r0ZeB9pBX+MXHT6U+5IGXGVLFkfg7XJ/3/0KsYs431gLiQDCBYfk1L0q+t4Klbr9lfzTppr1wR1sFb3f1UQFedgHpS0Lzux9PCgK8H4DQpP7fZmFWmKW0cKcHLcH2AeJxN5Ui49rsBG6sn9LcZyFyLh5lGEEm0MtavDZbO2V5dW126U7XH1twWXv0Zn4Wl8KJF2ICa2ZmZnKhC0ymEpCjhxV2mG/6vZ6G0pVxSfXRYNBGM5+X3EIhQKg3D6PV8k4mHSf3h8U5LcX1PFSxl1KiXCE5bXzZXrGKvLqSE8FJTUXKW125M+dkqckTxFDt+3D51f/7FP/6dZ1E2iKdCkL5LQCIoxs4WdnbEXGxuUZNZSdSb7h0j4Soy5mlkdZS1+GW2/uaXnRPsGj2jtC3c5zygZk9zAQ8qdRJnqNjczBi6/uxTU1FPv5J7nYx5cPXF1Gf4pOTU6+qPtVgNLTBNfb9Rh7zbEwmrDjl1J8dcmXXTy4OYmZmUpYV6kKhcExz+GTg8LD0xT3KytqJZfGvdx6TJyGZZ4Yp9Y0I9TXyrz6Qs7uNc5IgM46Td8s0d0GrxH8BzFVJWTFm9zEzgP+jK6bsFP7fGSCZf3FLFldDUXDX9bN7DjfNY/8RuGvL+2YhgNwdTrcGHoLZPTMT+6W6RjoWYjHCl0NNzNRYrQ3afzMCnUjBjRInRznrm4KUrt9Tv2zWt1GNbXY1ffQNvv5Hk5ewHV67ADWFUXJ68yWTcxmx/E7XG07hupKgQtMZGPmxu7iojOc+Yl5JapMZWdR57dLLKSfGr9GNadZCMcVLJy7DXOFqUl4h5hotyVMO1uLt+azkFQYWtwIZnKyDO4/awYVxPYpXbzWX3C1w="></source>
+        </audio>
+    </div>
+
+    <!-- 通信バッファリングクラス -->
+    <script>
+    class CommunicationBuffer {
+        constructor() {
+            this.queue = [];
+            this.busy = false;
+            this.port = null;
+            this.protocol = null; // 'modbus' or 'rs485'
+            this.priorityCommand = false; // 優先コマンドフラグ
+        }
+
+        setPort(port) {
+            this.port = port;
+        }
+
+        async enqueueCommand(protocol, command, callback, priority = false) {
+            // 優先コマンドの場合、キューの先頭に追加
+            const commandObj = {
+                protocol: protocol,
+                command: command,
+                callback: callback,
+                priority: priority
+            };
+
+            if (priority) {
+                this.priorityCommand = true;
+                this.queue.unshift(commandObj); // キューの先頭に追加
+            } else {
+                this.queue.push(commandObj); // 通常通りキューの末尾に追加
+            }
+
+            // キューが実行中でなければ処理を開始
+            if (!this.busy) {
+                await this.processQueue();
+            } else if (priority) {
+                // 優先コマンドが追加されたが、現在処理中の場合は進行中の処理を中断できないため、
+                // 次のコマンドとして処理されるよう、状態だけを更新
+                console.log('優先コマンドを追加しました（次のコマンドとして処理されます）');
+            }
+        }
+
+        async processQueue() {
+            if (this.queue.length === 0 || this.busy || !this.port) {
+                return;
+            }
+
+            this.busy = true;
+            let currentCommand = null;
+            let writer = null;
+
+            try {
+                currentCommand = this.queue.shift();
+                this.protocol = currentCommand.protocol;
+
+                // 優先コマンドの場合の処理
+                const waitTime = currentCommand.priority ? 0 : 50; // 優先コマンドは待機なし、通常は50ms待機
+
+                if (waitTime > 0) {
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                }
+
+                // プロトコルに応じたコマンド送信
+                writer = this.port.writable.getWriter();
+                await writer.write(currentCommand.command);
+                writer.releaseLock();
+                writer = null;
+
+                // 応答の読み取り (コールバックに実装)
+                if (currentCommand.callback) {
+                    await currentCommand.callback();
+                }
+            } catch (error) {
+                console.error('通信エラー:', error);
+                document.getElementById('statusText').textContent = `通信エラー: ${error.message}`;
+                // エラー発生時もwriterのロックを解除
+                if (writer) {
+                    try {
+                        writer.releaseLock();
+                    } catch (e) {
+                        console.warn('Writer release error:', e);
+                    }
+                }
+            } finally {
+                this.protocol = null;
+                this.busy = false;
+                this.priorityCommand = false;
+
+                // キューに残りがあれば次を処理
+                if (this.queue.length > 0) {
+                    // 次のコマンドを処理（待機時間を短縮）
+                    const nextDelay = this.queue[0].priority ? 0 : 50; // 次が優先コマンドなら待機なし
+                    setTimeout(() => {
+                        this.processQueue();
+                    }, nextDelay);
+                }
+            }
+        }
+
+        clear() {
+            this.queue = [];
+            this.busy = false;
+            this.protocol = null;
+            this.priorityCommand = false;
+        }
+    }
+
+        // グローバルバッファインスタンス
+        const communicationBuffer = new CommunicationBuffer();
+    </script>
+
+    <!-- ModbusCommands クラス -->
+    <script>
+        class ModbusCommands {
+            static calculateCRC(data, length) {
+                let crc = 0xFFFF;
+                for (let i = 0; i < length; i++) {
+                    crc ^= data[i];
+                    for (let j = 0; j < 8; j++) {
+                        if (crc & 0x0001) {
+                            crc = (crc >> 1) ^ 0xA001;
+                        } else {
+                            crc = crc >> 1;
+                        }
+                    }
+                }
+                return [crc & 0xFF, (crc >> 8) & 0xFF];
+            }
+
+            static createReadTempCommand() {
+                const data = new Uint8Array([
+                    0x0B,       // スレーブアドレス
+                    0x04,       // ファンクションコード
+                    0x00, 0x64, // 開始アドレス (100)
+                    0x00, 0x02  // レジスタ数
+                ]);
+                const crc = this.calculateCRC(data, 6);
+                return new Uint8Array([...data, crc[0], crc[1]]);
+            }
+
+            static createSetTempCommand(temp) {
+                const tempValue = Math.round(temp * 10);
+                const data = new Uint8Array([
+                    0x0B,       // スレーブアドレス
+                    0x06,       // ファンクションコード (Write Single Register)
+                    0x00, 0x00, // リファレンス番号 40001
+                    (tempValue >> 8) & 0xFF, tempValue & 0xFF
+                ]);
+                const crc = this.calculateCRC(data, 6);
+                return new Uint8Array([...data, crc[0], crc[1]]);
+            }
+
+            static createReadSetpointCommand() {
+                const data = new Uint8Array([
+                    0x0B,       // スレーブアドレス
+                    0x03,       // ファンクションコード (Read Holding Registers)
+                    0x00, 0x00, // リファレンス番号 40001
+                    0x00, 0x01  // レジスタ数
+                ]);
+                const crc = this.calculateCRC(data, 6);
+                return new Uint8Array([...data, crc[0], crc[1]]);
+            }
+
+            static createReadStatusCommand(address) {
+                const highByte = (address >> 8) & 0xFF;
+                const lowByte = address & 0xFF;
+                const data = new Uint8Array([
+                    0x0B,           // スレーブアドレス
+                    0x03,           // ファンクションコード (Read Holding Registers)
+                    highByte, lowByte, // レジスタアドレス
+                    0x00, 0x01      // レジスタ数: 1
+                ]);
+                const crc = this.calculateCRC(data, 6);
+                return new Uint8Array([...data, crc[0], crc[1]]);
+            }
+
+            static createControlCommand(isOn) {
+                const data = new Uint8Array([
+                    0x0B,       // スレーブアドレス
+                    0x06,       // ファンクションコード
+                    0x17, 0x71, // レジスタアドレス (46002)
+                    0x00, isOn ? 0x01 : 0x00, // 値: ON=1, OFF=0
+                ]);
+                const crc = this.calculateCRC(data, 6);
+                const command = new Uint8Array([...data, crc[0], crc[1]]);
+
+                // デバッグ出力
+                console.log(`運転${isOn ? 'ON' : 'OFF'}コマンド生成:`,
+                    Array.from(command).map(b => b.toString(16).padStart(2, '0')).join(' '));
+
+                return command;
+            }
+
+            static createModeCommand() {
+                const data = new Uint8Array([
+                    0x0B,       // スレーブアドレス
+                    0x06,       // ファンクションコード
+                    0x17, 0x70, // レジスタアドレス (46001)
+                    0x00, 0x00, // 値: 0（定値運転モード）
+                ]);
+                const crc = this.calculateCRC(data, 6);
+                return new Uint8Array([...data, crc[0], crc[1]]);
+            }
+        }
+    </script>
+
+    <!-- RS485コマンドクラス -->
+    <script>
+        class RS485Commands {
+            // 文字列と16進数の変換関数
+            static stringToHex(str) {
+                return Array.from(str).map(char =>
+                    char.charCodeAt(0).toString(16).padStart(2, '0')
+                ).join('');
+            }
+
+            static hexToString(hex) {
+                const bytes = hex.match(/.{2}/g) || [];
+                return bytes.map(byte => String.fromCharCode(parseInt(byte, 16))).join('');
+            }
+
+            static hexToUint8Array(hexString) {
+                const pairs = hexString.match(/[\dA-F]{2}/gi) || [];
+                return new Uint8Array(pairs.map(pair => parseInt(pair, 16)));
+            }
+
+            // チェックサム計算関数
+            static calculateChecksum(hexString) {
+                let sum = 0;
+                for (let i = 0; i < hexString.length; i += 2) {
+                    sum += parseInt(hexString.substr(i, 2), 16);
+                }
+                const hexChecksum = (sum & 0xFF).toString(16).padStart(2, '0').toUpperCase();
+                return this.stringToHex(hexChecksum);
+            }
+
+            // コマンド作成関数
+            static createReadCommand(deviceId, address) {
+                const formattedDeviceId = deviceId.toString().padStart(3, '0');
+                const formattedAddress = address.toString().padStart(4, '0');
+                const cmdStr = `${formattedDeviceId}R${formattedAddress}`;
+                const cmdHex = this.stringToHex(cmdStr);
+                const fullCmdHex = `02${cmdHex}03`;
+                const checksum = this.calculateChecksum(fullCmdHex);
+                return `${fullCmdHex}${checksum}0D0A`;
+            }
+
+            static createWriteCommand(deviceId, address, value, sign = '+', digits = '4') {
+                const formattedDeviceId = deviceId.toString().padStart(3, '0');
+                const formattedAddress = address.toString().padStart(4, '0');
+                const valueStr = Math.abs(value).toString().padStart(4, '0');
+                const cmdStr = `${formattedDeviceId}W${formattedAddress}${sign}${digits}${valueStr}`;
+                const cmdHex = this.stringToHex(cmdStr);
+                const fullCmdHex = `02${cmdHex}03`;
+                const checksum = this.calculateChecksum(fullCmdHex);
+                return `${fullCmdHex}${checksum}0D0A`;
+            }
+
+            // バイト配列に変換
+            static toUint8Array(command) {
+                return this.hexToUint8Array(command);
+            }
+
+            // 応答解析関数
+            static parseResponse(response) {
+                if (!response || !(response instanceof Uint8Array)) return null;
+
+                const hexString = Array.from(response)
+                    .map(byte => byte.toString(16).padStart(2, '0'))
+                    .join('');
+
+                const asciiString = this.hexToString(hexString.slice(2, -8));
+                const pattern = /(\d{3})([RW])(\d{4})(\d{2})([+-])(\d)(\d+)/;
+                const match = asciiString.match(pattern);
+
+                if (!match) return null;
+
+                return {
+                    deviceId: match[1],
+                    command: match[2],
+                    address: match[3],
+                    status: match[4],
+                    sign: match[5],
+                    digits: match[6],
+                    value: parseInt(match[7]) * (match[5] === '-' ? -1 : 1)
+                };
+            }
+        }
+    </script>
+
+    <!-- TimerManager クラス -->
+    <script>
+    class TimerManager {
+        constructor(displayElement, onTimerEnd) {
+            this.displayElement = displayElement;
+            this.onTimerEnd = onTimerEnd;
+            this.timerInterval = null;
+            this.timerEndTime = null;
+            this.syncWithDataCollection = false;
+            this.showAlarm = false; // アラーム表示フラグを追加
+            this.onTimerReset = null; // タイマーリセット時のコールバック
+        }
+
+        // onReset コールバックを設定するメソッド
+        setOnTimerReset(callback) {
+            this.onTimerReset = callback;
+        }
+
+        startTimer(durationMinutes, targetTemp, syncWithData, showAlarm) {
+            if (this.timerInterval) {
+                this.stopTimer(false); // 内部停止（リセットコールバックを呼ばない）
+            }
+
+            this.syncWithDataCollection = syncWithData;
+            this.showAlarm = showAlarm; // アラームフラグを設定
+            this.timerEndTime = new Date(Date.now() + durationMinutes * 60000);
+            this.updateDisplay();
+
+            this.timerInterval = setInterval(() => {
+                if (new Date() >= this.timerEndTime) {
+                    this.onTimerEnd(targetTemp, this.syncWithDataCollection);
+                    this.stopTimer(true); // 自動停止（リセットコールバックを呼ぶ）
+                    
+                    // アラーム表示が有効な場合にアラームを表示
+                    if (this.showAlarm) {
+                        this.showAlarmDialog();
+                    }
+                } else {
+                    this.updateDisplay();
+                }
+            }, 1000);
+
+            return true;
+        }
+
+        // アラームダイアログ表示メソッド
+        showAlarmDialog() {
+            // 既存のアラームがあれば削除
+            this.removeAlarmDialog();
+            
+            // サウンド再生
+            const alarmSound = document.getElementById('alarmSound');
+            alarmSound.currentTime = 0;
+            alarmSound.play();
+            
+            // オーバーレイ作成
+            const overlay = document.createElement('div');
+            overlay.className = 'alarm-overlay';
+            overlay.id = 'alarmOverlay';
+            
+            // ダイアログ作成
+            const dialog = document.createElement('div');
+            dialog.className = 'alarm-dialog';
+            dialog.id = 'alarmDialog';
+            
+            // ダイアログ内容
+            dialog.innerHTML = `
+                <h3>タイマー完了</h3>
+                <p>設定されたタイマーが完了しました。</p>
+                <button id="closeAlarm">閉じる</button>
+            `;
+            
+            // body に追加
+            document.body.appendChild(overlay);
+            document.body.appendChild(dialog);
+            
+            // 閉じるボタンのイベント設定 - 確認ダイアログ付き
+            document.getElementById('closeAlarm').addEventListener('click', () => {
+                // 確認ダイアログを表示
+                const confirmed = confirm("タイマー完了アラームを閉じてもよろしいですか？");
+                
+                // 「OK」を選択した場合のみ閉じる
+                if (confirmed) {
+                    this.removeAlarmDialog();
+                    alarmSound.pause();
+                }
+            });
+        }
+        
+        // アラームダイアログ削除メソッド
+        removeAlarmDialog() {
+            const overlay = document.getElementById('alarmOverlay');
+            const dialog = document.getElementById('alarmDialog');
+            
+            if (overlay) overlay.remove();
+            if (dialog) dialog.remove();
+        }
+
+        // autoReset パラメータを追加: true=自動終了時, false=手動停止時
+        stopTimer(autoReset = false) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+            this.timerEndTime = null;
+            this.displayElement.textContent = '残り時間: --:--';
+
+            // タイマーが自動終了した場合、リセットコールバックを呼ぶ
+            if (autoReset && this.onTimerReset) {
+                this.onTimerReset();
+            }
+        }
+
+        updateDisplay() {
+            if (!this.timerEndTime) return;
+
+            const now = new Date();
+            const diff = this.timerEndTime - now;
+            if (diff <= 0) {
+                this.stopTimer(true); // 自動停止（リセットコールバックを呼ぶ）
+                return;
+            }
+
+            const minutes = Math.floor(diff / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            this.displayElement.textContent =
+                `残り時間: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        isRunning() {
+            return this.timerInterval !== null;
+        }
+    }
+    </script>
+
+    <script>
+        // グローバル変数
+        let port = null;
+        let keepReading = false;
+        let updateIntervalMs = 5000; // デフォルト5秒
+        let timerManager;
+        let voltageReadingInterval = null;
+        let isRunning = false;
+        let currentRow = 0;
+        let totalTime = 0;
+        let automationInterval = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            timerManager = new TimerManager(
+                document.getElementById('timerDisplay'),
+                setTemperature
+            );
+
+            // タイマーリセット時のコールバックを設定
+            timerManager.setOnTimerReset(() => {
+                document.getElementById('stopTimer').disabled = true;
+                document.getElementById('startTimer').disabled = false;
+                document.getElementById('statusText').textContent = 'タイマーが完了しました';
+            });
+
+            // ブラウザウィンドウを閉じる前の警告設定
+            window.addEventListener('beforeunload', (event) => {
+                // ポートが接続中の場合のみ警告を表示
+                if (port !== null) {
+                    const message = "デバイスがまだ接続されています。アプリケーションを閉じる前に切断することをお勧めします。";
+                    event.preventDefault();
+                    event.returnValue = message;
+                    return message;
+                }
+            });
+
+
+            // 自動化の行追加ボタン
+            document.getElementById('addRow').addEventListener('click', addNewRow);
+
+            // 自動化の行削除ボタン
+            document.getElementById('removeRow').addEventListener('click', removeRow);
+
+            // 自動化の開始/停止ボタン
+            document.getElementById('startAutomation').addEventListener('click', startAutomation);
+            document.getElementById('stopAutomation').addEventListener('click', stopAutomation);
+
+            // CSV出力ボタン
+            document.getElementById('exportCSV').addEventListener('click', exportTableToCSV);
+
+            // 流量設定ボタン
+            document.getElementById('writeButton').addEventListener('click', () => writeValue('set'));
+
+            // 全閉ボタン
+            document.getElementById('closeButton').addEventListener('click', () => writeValue('close'));
+
+            // ID設定保存ボタン
+            document.getElementById('saveDeviceSettings').addEventListener('click', readDeviceSettings);
+
+            // 温度制御ボタン
+            document.getElementById('setTemp').addEventListener('click', () => {
+                const temp = parseFloat(document.getElementById('tempSetpoint').value);
+                if (!isNaN(temp) && temp >= 0 && temp <= 60) {
+                    setTemperature(temp);
+                } else {
+                    alert('温度は0～60℃の範囲で入力してください');
+                }
+            });
+
+            // 25℃復帰ボタン
+            document.getElementById('return25').addEventListener('click', () => {
+                setTemperature(25.0);
+                document.getElementById('tempSetpoint').value = '25.0';
+            });
+
+            // タイマーボタン
+            document.getElementById('startTimer').addEventListener('click', () => {
+                const duration = parseInt(document.getElementById('timerDuration').value);
+                const targetTemp = parseFloat(document.getElementById('timerTemp').value);
+                const syncWithData = document.getElementById('syncDataCollection').checked; // データ連動チェックボックスの状態
+                const showAlarm = document.getElementById('timerAlarm').checked; // アラームチェックボックスの状態
+
+                if (timerManager.startTimer(duration, targetTemp, syncWithData, showAlarm)) {
+                    document.getElementById('stopTimer').disabled = false;
+                    document.getElementById('startTimer').disabled = true;
+                }
+            });
+
+            document.getElementById('stopTimer').addEventListener('click', () => {
+                timerManager.stopTimer(false); // 手動停止なのでfalse
+                document.getElementById('stopTimer').disabled = true;
+                document.getElementById('startTimer').disabled = false;
+            });
+            // モードボタン
+            document.getElementById('modeButton').addEventListener('click', setOperationMode);
+
+            // 運転ボタン
+            document.getElementById('controlButton').addEventListener('click', toggleOperation);
+
+            // 接続/切断ボタン
+            document.getElementById('connectButton').addEventListener('click', connectSerial);
+            document.getElementById('disconnectButton').addEventListener('click', disconnectSerial);
+
+            // シリアルポートの利用可能性チェック
+            if (!('serial' in navigator)) {
+                alert('このブラウザはシリアル通信に対応していません。\nChrome/Edge/Operaの最新版をご使用ください。');
+                document.getElementById('connectButton').disabled = true;
+                return;
+            }
+        });
+
+        // タイムアウト付きリーダー
+        async function readWithTimeout(timeout) {
+            return new Promise(async (resolve, reject) => {
+                // ポートがなければ即終了
+                if (!port) {
+                    reject(new Error('ポートが接続されていません'));
+                    return;
+                }
+
+                // 一時的なリーダー作成
+                let localReader = null;
+                try {
+                    localReader = port.readable.getReader();
+                } catch (error) {
+                    reject(new Error('リーダーの取得に失敗しました: ' + error.message));
+                    return;
+                }
+
+                const chunks = [];
+                const timer = setTimeout(() => {
+                    if (localReader) {
+                        try {
+                            localReader.releaseLock();
+                        } catch (e) {
+                            console.warn('タイムアウト時のリーダー解放エラー:', e);
+                        }
+                    }
+                    reject(new Error('読み取りタイムアウト'));
+                }, timeout);
+
+                try {
+                    while (true) {
+                        const { value, done } = await localReader.read();
+
+                        if (done) {
+                            console.log('読み取り完了シグナルを受信');
+                            break;
+                        }
+
+                        if (value && value.length > 0) {
+                            chunks.push(...value);
+
+                            // RS-485応答の終了条件
+                            if (communicationBuffer.protocol === 'rs485' &&
+                                chunks.length >= 2 &&
+                                chunks[chunks.length - 2] === 0x0D &&
+                                chunks[chunks.length - 1] === 0x0A) {
+                                break;
+                            }
+
+                            // Modbus応答の終了条件
+                            if (communicationBuffer.protocol === 'modbus' && chunks.length >= 5) {
+                                // Function code + data length check for Modbus
+                                if (chunks[1] === 0x03 || chunks[1] === 0x04) {
+                                    // Check if we have received all expected bytes
+                                    if (chunks.length >= chunks[2] + 5) {
+                                        break;
+                                    }
+                                } else if (chunks[1] === 0x06) {
+                                    // Write single register response is always 8 bytes
+                                    if (chunks.length >= 8) {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    clearTimeout(timer);
+                    try {
+                        localReader.releaseLock();
+                    } catch (e) {
+                        console.warn('リーダー解放エラー:', e);
+                    }
+
+                    if (chunks.length > 0) {
+                        resolve(new Uint8Array(chunks));
+                    } else {
+                        reject(new Error('応答データが受信できませんでした'));
+                    }
+                } catch (error) {
+                    clearTimeout(timer);
+                    try {
+                        if (localReader) {
+                            localReader.releaseLock();
+                        }
+                    } catch (e) {
+                        console.warn('エラー時のリーダー解放エラー:', e);
+                    }
+                    reject(error);
+                }
+            });
+        }
+
+    // RS-485コマンド送信（優先度パラメータ追加）
+    async function sendRS485Command(command, priority = false) {
+        return new Promise((resolve, reject) => {
+            const commandData = RS485Commands.toUint8Array(command);
+
+            communicationBuffer.enqueueCommand('rs485', commandData, async () => {
+                try {
+                    // 優先コマンドはタイムアウトを短く設定
+                    const timeout = priority ? 1500 : 3000;
+                    const response = await readWithTimeout(timeout);
+                    resolve(response);
+                } catch (error) {
+                    reject(error);
+                }
+            }, priority); // 優先度パラメータを渡す
+        });
+    }
+
+        // Modbusコマンド送信
+        async function sendModbusCommand(command) {
+            return new Promise((resolve, reject) => {
+                communicationBuffer.enqueueCommand('modbus', command, async () => {
+                    try {
+                        const response = await readWithTimeout(5000); // タイムアウトを5秒に延長
+                        resolve(response);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            });
+        }
+
+        // RS-485 電圧読み取り関数
+        async function readVoltage() {
+            try {
+                const settingDeviceId = document.getElementById('settingDeviceId').value;
+                const displayDeviceId = document.getElementById('displayDeviceId').value;
+
+                // 設定器の読み取り
+                const cmd1 = RS485Commands.createReadCommand(settingDeviceId, '1000');
+                const response1 = await sendRS485Command(cmd1);
+                const data1 = RS485Commands.parseResponse(response1);
+
+                // 表示器の読み取り
+                const cmd2 = RS485Commands.createReadCommand(displayDeviceId, '1000');
+                const response2 = await sendRS485Command(cmd2);
+                const data2 = RS485Commands.parseResponse(response2);
+
+                if (data1 && data2) {
+                    const voltage1 = data1.value / 1000;
+                    const voltage2 = data2.value / 1000;
+                    document.getElementById('currentVoltage1').textContent = voltage1.toFixed(3) + " [V]";
+                    document.getElementById('currentVoltage2').textContent = voltage2.toFixed(3) + " [V]";
+
+                    return {
+                        setting: voltage1.toFixed(3),
+                        display: voltage2.toFixed(3)
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.error('電圧読み取りエラー:', error);
+                return null;
+            }
+        }
+
+        // 電圧読み取り開始関数
+        function startVoltageReading() {
+            // 既存のインターバルをクリア
+            stopVoltageReading();
+
+            // 1秒間隔で電圧読み取り
+            voltageReadingInterval = setInterval(async () => {
+                try {
+                    // RS-485通信を使用して電圧値を読み取り
+                    await readVoltage();
+                } catch (error) {
+                    console.error('電圧読み取りエラー:', error);
+                    // エラー発生してもインターバルは継続
+                }
+            }, 1000);
+        }
+
+        // 電圧読み取り停止関数
+        function stopVoltageReading() {
+            if (voltageReadingInterval) {
+                clearInterval(voltageReadingInterval);
+                voltageReadingInterval = null;
+            }
+            // 電圧表示をリセット
+            document.getElementById('currentVoltage1').textContent = "0.000 [V]";
+            document.getElementById('currentVoltage2').textContent = "0.000 [V]";
+        }
+
+        // 値書き込み関数 (RS-485)
+    // 値書き込み関数の修正 (RS-485)
+    async function writeValue(mode = 'set') {
+        try {
+            const settingDeviceId = document.getElementById('settingDeviceId').value;
+
+            // 全閉処理部分の修正
+            if (mode === 'close') {
+                // 即座にフィードバックを提供
+                document.getElementById('statusText').textContent = '全閉操作を実行中...';
+                document.getElementById('closeButton').disabled = true; // ボタンを一時的に無効化
+
+                // 全閉処理: 0100アドレスに2を書き込む
+                const cmd = RS485Commands.createWriteCommand(settingDeviceId, '0100', 2);
+
+                // 優先度を指定してコマンドを送信
+                const response = await sendRS485Command(cmd, true); // 優先度をtrueに設定
+
+                if (response) {
+                    stopVoltageReading();
+                    document.getElementById('percentInput').value = '';
+                    document.getElementById('statusText').textContent = '全閉操作が完了しました';
+                } else {
+                    alert('全閉操作に失敗しました');
+                }
+
+                document.getElementById('closeButton').disabled = false; // ボタンを再有効化
+                return;  // 全閉処理完了後に関数を終了
+            }
+
+            // 通常の流量設定処理
+            const percent = parseFloat(document.getElementById('percentInput').value);
+            if (isNaN(percent) || percent < 0 || percent > 100.0) {
+                alert('0~100.0までの値を入力してください。');
+                return;
+            }
+
+            const value = Math.round(percent * 5000 / 100);
+            const cmd = RS485Commands.createWriteCommand(settingDeviceId, '0300', value);
+            const response = await sendRS485Command(cmd);
+            const cmd2 = RS485Commands.createWriteCommand(settingDeviceId, '0100', 0);
+            await sendRS485Command(cmd2);
+
+            if (response) {
+                startVoltageReading();
+                document.getElementById('statusText').textContent = `流量設定完了: ${percent}%`;
+            } else {
+                alert('値の書き込みに失敗しました');
+            }
+        } catch (error) {
+            console.error('値書き込みエラー:', error);
+            alert('エラーが発生しました');
+            // エラー時もボタンを再有効化
+            if (mode === 'close') {
+                document.getElementById('closeButton').disabled = false;
+            }
+        }
+    }
+
+        // 新しい行の追加
+        function addNewRow() {
+            const tbody = document.querySelector('#automationTable tbody');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                    <td><input type="text" class="percent-input" maxlength="6"></td>
+                    <td><input type="text" class="time-input" maxlength="3"></td>
+                    <td><input type="text" disabled></td>
+                    <td><input type="text" disabled></td>
+                `;
+            tbody.appendChild(newRow);
+        }
+
+        // 行の削除
+        function removeRow() {
+            const tbody = document.querySelector('#automationTable tbody');
+            if (tbody.rows.length > 1) {
+                tbody.deleteRow(tbody.rows.length - 1);
+            }
+        }
+
+        // CSV出力機能
+        function exportTableToCSV() {
+            try {
+                const rows = document.querySelectorAll('#automationTable tbody tr');
+                if (rows.length === 0) {
+                    alert('エクスポートするデータがありません');
+                    return;
+                }
+
+                // CSVヘッダー
+                const csvContent = [
+                    '設定値(%),待機時間(s),設定器出力(V),表示器出力(V)'
+                ];
+
+                // データ行の追加
+                rows.forEach(row => {
+                    const percentValue = row.querySelector('.percent-input').value;
+                    const timeValue = row.querySelector('.time-input').value;
+                    const settingOutput = row.querySelectorAll('input[type="text"]:disabled')[0].value;
+                    const displayOutput = row.querySelectorAll('input[type="text"]:disabled')[1].value;
+
+                    csvContent.push(`${percentValue},${timeValue},${settingOutput},${displayOutput}`);
+                });
+
+                // CSVファイルの作成と保存
+                const blob = new Blob([csvContent.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `flow_control_log_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}.csv`;
+                link.click();
+
+            } catch (error) {
+                console.error('CSV出力エラー:', error);
+                alert('CSVファイルの出力中にエラーが発生しました');
+            }
+        }
+
+        // 自動化の開始
+    // 自動化の開始
+    async function startAutomation() {
+        console.log('自動化開始処理を呼び出しました');
+
+        // まず最初にプログレスバーを0%にリセット
+        updateProgress(0);
+        document.getElementById('progressText').textContent = '0%';
+
+        // 自動化テーブルに値が入力されているか確認
+        const rows = document.querySelectorAll('#automationTable tbody tr');
+        let hasData = false;
+
+        for (let i = 0; i < rows.length; i++) {
+            const percentInput = rows[i].querySelector('.percent-input');
+            const timeInput = rows[i].querySelector('.time-input');
+
+            if (percentInput.value !== '' && timeInput.value !== '') {
+                hasData = true;
+
+                // 入力値のチェック
+                const percentValue = parseFloat(percentInput.value);
+                const timeValue = parseInt(timeInput.value);
+
+                if (isNaN(percentValue) || percentValue < 0 || percentValue > 100 ||
+                    isNaN(timeValue) || timeValue < 1 || timeValue > 120) {
+                    alert(`${i + 1}行目の入力値が正しくありません。\n設定値: 0-100%\n待機時間: 1-120秒`);
+                    return;
+                }
+            }
+        }
+
+        // データがない場合は空の行を自動的に追加
+        if (!hasData) {
+            console.log('自動化テーブルにデータがありません');
+            if (rows.length === 1 && rows[0].querySelector('.percent-input').value === '') {
+                // 最初の行に何もない場合、サンプルデータを追加
+                const firstRow = rows[0];
+                firstRow.querySelector('.percent-input').value = '50.0';
+                firstRow.querySelector('.time-input').value = '10';
+                console.log('サンプルデータを追加しました');
+                document.getElementById('statusText').textContent = 'サンプルデータで自動化を開始します';
+            } else {
+                alert('自動化テーブルに有効なデータがありません。\n少なくとも1行に設定値と待機時間を入力してください。');
+                return;
+            }
+        }
+
+        // 自動化開始前の準備
+        rows.forEach(row => {
+            const outputs = row.querySelectorAll('input[type="text"]:disabled');
+            outputs[0].value = '';
+            outputs[1].value = '';
+        });
+
+        isRunning = true;
+        currentRow = 0;
+        totalTime = calculateTotalTime();
+        console.log(`自動化開始: 合計時間=${totalTime}秒, 行数=${rows.length}`);
+
+        // UI更新
+        document.getElementById('startAutomation').disabled = true;
+        document.getElementById('stopAutomation').disabled = false;
+        document.getElementById('writeButton').disabled = true;
+        document.getElementById('closeButton').disabled = true;
+        document.getElementById('exportCSV').disabled = true;
+
+        // 自動化処理の開始
+        processAutomationRow();
+    }
+
+        // 自動化の停止
+    // 自動化の停止
+    function stopAutomation() {
+        isRunning = false;
+
+        // UI更新
+        document.getElementById('startAutomation').disabled = false;
+        document.getElementById('stopAutomation').disabled = true;
+        document.getElementById('writeButton').disabled = false;
+        document.getElementById('closeButton').disabled = false;
+        document.getElementById('exportCSV').disabled = false;
+
+        // 明示的に進捗バーリセット - プログレスバーを0%に戻さない（100%のまま）
+        // updateProgress(0);
+        // document.getElementById('progressText').textContent = '0%';
+
+        // 全閉処理
+        const settingDeviceId = document.getElementById('settingDeviceId').value;
+        sendRS485Command(RS485Commands.createWriteCommand(settingDeviceId, '0100', 2))
+            .then(() => {
+                document.getElementById('statusText').textContent = '自動化が停止されました';
+            })
+            .catch(error => {
+                console.error('停止エラー:', error);
+            });
+    }
+
+        // 合計時間の計算
+        function calculateTotalTime() {
+            const timeInputs = document.querySelectorAll('.time-input');
+            return Array.from(timeInputs).reduce((total, input) => {
+                return total + (parseInt(input.value) || 0);
+            }, 0);
+        }
+
+        // 進捗の更新
+        function updateProgress(percent) {
+            document.getElementById('progress').style.width = `${percent}%`;
+            document.getElementById('progressText').textContent = `${percent.toFixed(1)}%`;
+        }
+
+        // 自動化の1行処理
+    // 自動化の1行処理
+    async function processAutomationRow() {
+        if (!isRunning) return;
+
+        const rows = document.querySelectorAll('#automationTable tbody tr');
+        const settingDeviceId = document.getElementById('settingDeviceId').value;
+
+        if (currentRow >= rows.length) {
+            // 全行の処理が完了
+            await sendRS485Command(RS485Commands.createWriteCommand(settingDeviceId, '0100', 2));
+            isRunning = false;
+            document.getElementById('startAutomation').disabled = false;
+            document.getElementById('stopAutomation').disabled = true;
+            document.getElementById('writeButton').disabled = false;
+            document.getElementById('closeButton').disabled = false;
+            document.getElementById('exportCSV').disabled = false;
+
+            // 100%表示を確実に行う
+            updateProgress(100);
+            document.getElementById('progressText').textContent = '100%';
+
+            document.getElementById('statusText').textContent = '自動化処理が完了しました';
+            return;
+        }
+
+        const row = rows[currentRow];
+        const percentValue = parseFloat(row.querySelector('.percent-input').value);
+        const timeValue = parseInt(row.querySelector('.time-input').value);
+
+        try {
+            // ステータス更新
+            document.getElementById('statusText').textContent = `行 ${currentRow + 1}: ${percentValue}% を設定中...`;
+
+            // 初期化コマンドの送信
+            await sendRS485Command(RS485Commands.createWriteCommand(settingDeviceId, '0100', 0));
+
+            // 設定値の送信
+            const value = Math.round(percentValue * 5000 / 100);
+            await sendRS485Command(RS485Commands.createWriteCommand(settingDeviceId, '0300', value));
+
+            // 指定された待機時間後に電圧値を読み取り
+            await new Promise(resolve => {
+                setTimeout(async () => {
+                    if (!isRunning) {
+                        resolve();
+                        return;
+                    }
+
+                    const voltages = await readVoltage();
+                    if (voltages) {
+                        const outputs = row.querySelectorAll('input[type="text"]:disabled');
+                        outputs[0].value = voltages.setting;
+                        outputs[1].value = voltages.display;
+                    }
+
+                    // 進捗更新
+                    let previousTime = 0;
+                    for (let i = 0; i < currentRow; i++) {
+                        previousTime += parseInt(rows[i].querySelector('.time-input').value) || 0;
+                    }
+                    const progress = (previousTime + timeValue) / totalTime * 100;
+                    updateProgress(progress);
+
+                    currentRow++;
+                    resolve();
+                }, timeValue * 1000);  // 指定された待機時間
+            });
+
+            // 次の行の処理
+            if (isRunning) {
+                await processAutomationRow();
+            }
+        } catch (error) {
+            console.error('自動化処理エラー:', error);
+            isRunning = false;
+            document.getElementById('startAutomation').disabled = false;
+            document.getElementById('stopAutomation').disabled = true;
+            document.getElementById('writeButton').disabled = false;
+            document.getElementById('closeButton').disabled = false;
+            document.getElementById('exportCSV').disabled = false;
+            document.getElementById('statusText').textContent = '自動化処理中にエラーが発生しました';
+        }
+    }
+
+        // CR-400デバイス設定の読み取り
+        async function readDeviceSettings() {
+            try {
+                const settingDeviceId = document.getElementById('settingDeviceId').value;
+                const displayDeviceId = document.getElementById('displayDeviceId').value;
+
+                // 設定器のFS値読み取り
+                const cmd1 = RS485Commands.createReadCommand(settingDeviceId, '0000');
+                const response1 = await sendRS485Command(cmd1);
+                const data1 = RS485Commands.parseResponse(response1);
+
+                // 表示器のFS値読み取り
+                const cmd2 = RS485Commands.createReadCommand(displayDeviceId, '0000');
+                const response2 = await sendRS485Command(cmd2);
+                const data2 = RS485Commands.parseResponse(response2);
+
+                if (data1 && data2) {
+                    document.getElementById('id1-fullscale').textContent = data1.value;
+                    document.getElementById('id2-fullscale').textContent = data2.value;
+                    document.getElementById('statusText').textContent = 'デバイス設定の読み取りが完了しました';
+                } else {
+                    alert('デバイス設定の読み取りに失敗しました');
+                }
+            } catch (error) {
+                console.error('デバイス設定読み取りエラー:', error);
+                document.getElementById('statusText').textContent = 'デバイス設定の読み取りに失敗しました';
+            }
+        }
+
+        // 温度設定関数 (Modbus)
+        async function setTemperature(temp, startDataCollection = false) {
+            try {
+                const command = ModbusCommands.createSetTempCommand(temp);
+                const response = await sendModbusCommand(command);
+
+                document.getElementById('statusText').textContent = `温度設定完了: ${temp}℃`;
+
+                // データ採取と連動が有効なら自動流量設定を開始
+                if (startDataCollection) {
+                    console.log('データ採取と連動: 自動流量設定を開始します');
+                    document.getElementById('statusText').textContent = `温度設定完了: ${temp}℃ - データ採取を開始します`;
+
+                    // 自動流量設定が可能かチェック
+                    const rows = document.querySelectorAll('#automationTable tbody tr');
+                    const hasData = Array.from(rows).some(row => {
+                        return row.querySelector('.percent-input').value !== '';
+                    });
+
+                    if (hasData) {
+                        setTimeout(() => {
+                            startAutomation();
+                        }, 1000);
+                    } else {
+                        document.getElementById('statusText').textContent = `警告: 自動流量設定の開始データがありません。`;
+                    }
+                }
+            } catch (error) {
+                console.error('温度設定エラー:', error);
+                document.getElementById('statusText').textContent = '温度設定エラー: ' + error.message;
+            }
+        }
+
+        // モード設定関数 (Modbus)
+        async function setOperationMode() {
+            try {
+                const modeCommand = ModbusCommands.createModeCommand();
+                const response = await sendModbusCommand(modeCommand);
+
+                if (response && response[0] === 0x0B && response[1] === 0x06) {
+                    const button = document.getElementById('modeButton');
+                    button.textContent = '定値運転中';
+                    button.classList.remove('mode-off');
+                    button.classList.add('mode-on');
+                    document.getElementById('controlButton').disabled = false;
+                    document.getElementById('statusText').textContent = '定値運転モードに設定しました';
+                }
+            } catch (error) {
+                console.error('モード設定エラー:', error);
+                document.getElementById('statusText').textContent = 'モード設定エラー: ' + error.message;
+            }
+        }
+
+        // 運転制御関数 (Modbus) - 修正版
+        async function toggleOperation() {
+            try {
+                const button = document.getElementById('controlButton');
+                const isOn = !button.classList.contains('control-on');
+                const controlCommand = ModbusCommands.createControlCommand(isOn);
+
+                document.getElementById('statusText').textContent = isOn ? '運転ON処理中...' : '運転OFF処理中...';
+
+                const response = await sendModbusCommand(controlCommand);
+
+                // 応答チェックを強化
+                if (response && response.length >= 8 && response[0] === 0x0B && response[1] === 0x06) {
+                    const responseValue = (response[4] << 8) | response[5]; // レスポンスデータ部分
+
+                    console.log(`運転切替応答: ${Array.from(response).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
+                    console.log(`応答値: ${responseValue}, 要求値: ${isOn ? 1 : 0}`);
+
+                    // 応答が期待通りかを確認
+                    const isSuccess = (isOn && responseValue === 1) || (!isOn && responseValue === 0);
+
+                    if (isSuccess) {
+                        // UIを更新
+                        if (isOn) {
+                            button.textContent = '運転\nON';
+                            button.classList.remove('control-off');
+                            button.classList.add('control-on');
+                            button.style.backgroundColor = '#F44336'; // 明示的に赤色を設定
+                            document.getElementById('startTimer').disabled = false;
+                            document.getElementById('statusText').textContent = '運転をONにしました';
+                        } else {
+                            button.textContent = '運転\nOFF';
+                            button.classList.remove('control-on');
+                            button.classList.add('control-off');
+                            button.style.backgroundColor = '#9E9E9E'; // 明示的に灰色を設定
+                            document.getElementById('startTimer').disabled = true;
+                            document.getElementById('stopTimer').disabled = true;
+                            if (timerManager.isRunning()) {
+                                timerManager.stopTimer();
+                            }
+                            document.getElementById('statusText').textContent = '運転をOFFにしました';
+                        }
+                    } else {
+                        // 切替失敗
+                        document.getElementById('statusText').textContent = `運転${isOn ? 'ON' : 'OFF'}切替に失敗しました (応答値: ${responseValue})`;
+                        console.error(`運転切替失敗 - 要求: ${isOn ? 1 : 0}, 応答: ${responseValue}`);
+
+                        // 実際の状態を再確認
+                        setTimeout(async () => {
+                            try {
+                                await checkDeviceStatus();
+                            } catch (e) {
+                                console.warn('状態再確認エラー:', e);
+                            }
+                        }, 500);
+                    }
+                } else {
+                    throw new Error('不正な応答フォーマット');
+                }
+            } catch (error) {
+                console.error('運転制御エラー:', error);
+                document.getElementById('statusText').textContent = '運転制御エラー: ' + error.message;
+
+                // エラー時は状態を再確認
+                setTimeout(async () => {
+                    try {
+                        await checkDeviceStatus();
+                    } catch (e) {
+                        console.warn('状態再確認エラー:', e);
+                    }
+                }, 500);
+            }
+        }
+
+        // デバイスの状態をチェックする関数 (Modbus) - 修正版
+        async function checkDeviceStatus() {
+            try {
+                if (!port) {
+                    return null;
+                }
+
+                console.log('モード状態読み取り開始...');
+                const modeCommand = ModbusCommands.createReadStatusCommand(0x1770); // 0x1770 = 46001 - 40001 = 6000
+                const modeResponse = await sendModbusCommand(modeCommand);
+
+                // モード応答のデバッグ出力
+                console.log('モード状態読み取り応答:', Array.from(modeResponse || []).map(b => b.toString(16).padStart(2, '0')).join(' '));
+
+                if (!port) {
+                    return null;
+                }
+
+                // 少し待機してから次のコマンドを送信
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                console.log('運転状態読み取り開始...');
+                const controlCommand = ModbusCommands.createReadStatusCommand(0x1771); // 0x1771 = 46002 - 40001 = 6001
+                const controlResponse = await sendModbusCommand(controlCommand);
+
+                // 運転状態応答のデバッグ出力
+                console.log('運転状態読み取り応答:', Array.from(controlResponse || []).map(b => b.toString(16).padStart(2, '0')).join(' '));
+
+                // 応答チェックを強化
+                if (modeResponse && modeResponse.length >= 7 && modeResponse[1] === 0x03 &&
+                    controlResponse && controlResponse.length >= 7 && controlResponse[1] === 0x03) {
+
+                    // [0]:スレーブアドレス, [1]:ファンクションコード, [2]:データバイト数, [3]:データ上位, [4]:データ下位, [5-6]:CRC
+                    const modeValue = (modeResponse[3] << 8) | modeResponse[4]; // データ値の計算
+                    const controlValue = (controlResponse[3] << 8) | controlResponse[4]; // データ値の計算
+
+                    console.log(`初期状態確認完了: モード=${modeValue}, 運転=${controlValue}`);
+
+                    // 明示的にDOM更新を行う
+                    updateButtonStates(modeValue, controlValue);
+
+                    return { mode: modeValue, control: controlValue };
+                } else {
+                    console.warn('不正なレスポンスフォーマット');
+                    return null;
+                }
+            } catch (error) {
+                console.error('状態チェックエラー:', error);
+                throw error;
+            }
+        }
+
+        // ボタン状態の更新関数 - 修正版
+        function updateButtonStates(modeValue, controlValue) {
+            console.log(`ボタン状態更新（値）: モード=${modeValue}, 運転=${controlValue}`);
+
+            // モードボタンの更新
+            const modeButton = document.getElementById('modeButton');
+            if (modeValue === 0) {
+                modeButton.textContent = '定値運転中';
+                modeButton.classList.remove('mode-off');
+                modeButton.classList.add('mode-on');
+                modeButton.style.backgroundColor = '#2196F3'; // 明示的に色を設定
+            } else {
+                modeButton.textContent = '定値運転\nStart';
+                modeButton.classList.remove('mode-on');
+                modeButton.classList.add('mode-off');
+                modeButton.style.backgroundColor = '#9E9E9E'; // 明示的に色を設定
+            }
+
+            // 運転ボタンの更新
+            const controlButton = document.getElementById('controlButton');
+            if (controlValue === 1) {
+                controlButton.textContent = '運転\nON';
+                controlButton.classList.remove('control-off');
+                controlButton.classList.add('control-on');
+                controlButton.style.backgroundColor = '#F44336'; // 明示的に赤色を設定
+                console.log('運転ボタンをON状態に設定しました');
+                document.getElementById('startTimer').disabled = false;
+            } else {
+                controlButton.textContent = '運転\nOFF';
+                controlButton.classList.remove('control-on');
+                controlButton.classList.add('control-off');
+                controlButton.style.backgroundColor = '#9E9E9E'; // 明示的に灰色を設定
+                console.log('運転ボタンをOFF状態に設定しました');
+                document.getElementById('startTimer').disabled = true;
+                document.getElementById('stopTimer').disabled = true;
+            }
+        }
+
+        // 継続的な読み取り処理 (Modbus)
+        async function startReadingTemperature() {
+            // 初期状態確認フラグ（温度ループ内でのステータス確認は不要）
+
+            while (keepReading) {
+                try {
+                    // 通信バッファがビジー状態か確認
+                    if (!port) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        continue;
+                    }
+
+                    // 温度と設定値の読み取り間隔を空ける
+                    await new Promise(resolve => setTimeout(resolve, 200));
+
+                    // 現在温度読み取り
+                    const tempCommand = ModbusCommands.createReadTempCommand();
+                    const response = await sendModbusCommand(tempCommand).catch(e => {
+                        console.warn('温度読み取りエラー:', e);
+                        return null;
+                    });
+
+                    if (response && response[0] === 0x0B && response[1] === 0x04 && response[2] === 0x04) {
+                        const temp = (response[3] << 8) | response[4];
+                        const dp = (response[5] << 8) | response[6];
+                        const displayTemp = dp === 1 ? temp / 10 : temp;
+                        document.getElementById('temperatureValue').textContent =
+                            displayTemp.toFixed(dp === 1 ? 1 : 0);
+                    }
+
+                    // 設定温度読み取りの前に少し待機
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                    // 設定温度読み取り
+                    const setpointCommand = ModbusCommands.createReadSetpointCommand();
+                    const setpointResponse = await sendModbusCommand(setpointCommand).catch(e => {
+                        console.warn('設定温度読み取りエラー:', e);
+                        return null;
+                    });
+
+                    if (setpointResponse && setpointResponse[0] === 0x0B && setpointResponse[1] === 0x03) {
+                        const setpoint = ((setpointResponse[3] << 8) | setpointResponse[4]) / 10;
+                        document.getElementById('setpointValue').textContent = setpoint.toFixed(1);
+                    }
+
+                    // 次の読み取りまで待機
+                    await new Promise(resolve => setTimeout(resolve, updateIntervalMs));
+
+                } catch (error) {
+                    console.error('温度読み取りループエラー:', error);
+                    // エラー時は少し長めに待機
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    if (!port || error.message === 'Port is not open' ||
+                        error.message === 'Device disconnected' ||
+                        error.message === 'The port is already open') {
+                        keepReading = false;
+                    }
+                }
+            }
+        }
+
+        // UI要素の有効化関数
+        function enableUIControls() {
+            document.getElementById('saveDeviceSettings').disabled = false;
+            document.getElementById('writeButton').disabled = false;
+            document.getElementById('closeButton').disabled = false;
+            document.getElementById('percentInput').disabled = false;
+            document.getElementById('addRow').disabled = false;
+            document.getElementById('removeRow').disabled = false;
+            document.getElementById('startAutomation').disabled = false;
+            document.getElementById('exportCSV').disabled = false;
+            document.getElementById('modeButton').disabled = false;
+            document.getElementById('controlButton').disabled = false;
+            document.getElementById('setTemp').disabled = false;
+            document.getElementById('return25').disabled = false;
+            document.getElementById('tempSetpoint').disabled = false;
+            document.getElementById('timerDuration').disabled = false;
+            document.getElementById('timerTemp').disabled = false;
+            document.getElementById('syncDataCollection').disabled = false;
+            document.getElementById('timerAlarm').disabled = false; // アラームチェックボックスも有効化
+
+            // 自動化テーブルの入力フィールドを有効化
+            document.querySelectorAll('#automationTable .percent-input, #automationTable .time-input').forEach(input => {
+                input.disabled = false;
+            });
+        }
+
+        // ポート接続処理 - 修正版
+        async function connectSerial() {
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({
+                    baudRate: 9600,
+                    dataBits: 8,
+                    stopBits: 1,
+                    parity: 'none',
+                    flowControl: 'none'
+                });
+
+                // 通信バッファにポートを設定
+                communicationBuffer.setPort(port);
+                communicationBuffer.clear(); // バッファをクリア
+
+                // 接続状態の更新
+                document.getElementById('connectButton').disabled = true;
+                document.getElementById('disconnectButton').disabled = false;
+                document.getElementById('connectionStatus').textContent = '接続済み';
+                document.getElementById('connectionStatus').className = 'status connected';
+                document.getElementById('statusText').textContent = 'シリアルポートに接続しました';
+
+                // UI要素の有効化
+                enableUIControls();
+
+                // CR-400初期値の読み取り - 流量計
+                await readDeviceSettings();
+
+                // 温度制御装置の初期状態を確認する
+                try {
+                    // 少し待機してから状態確認（通信が安定するのを待つ）
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    // デバイスの実際の状態を確認
+                    const statusResult = await checkDeviceStatus();
+                    if (statusResult) {
+                        console.log('デバイスの初期状態を確認しました:', statusResult);
+                    } else {
+                        console.warn('デバイスの初期状態が取得できませんでした');
+                        // 初期状態が取得できない場合はデフォルト設定
+                        setDefaultStates();
+                    }
+                } catch (error) {
+                    console.error('初期状態確認エラー:', error);
+                    // エラー時はデフォルト設定
+                    setDefaultStates();
+                }
+
+                // 温度監視の開始
+                keepReading = true;
+                startReadingTemperature();
+
+                console.log('シリアル接続成功');
+            } catch (error) {
+                console.error('接続エラー:', error);
+                document.getElementById('statusText').textContent = 'ポート接続に失敗しました: ' + error.message;
+                await disconnectSerial();
+            }
+        }
+
+        // デフォルト状態設定
+        function setDefaultStates() {
+            // 定値運転モード
+            const modeButton = document.getElementById('modeButton');
+            modeButton.textContent = '定値運転\nStart';
+            modeButton.classList.remove('mode-on');
+            modeButton.classList.add('mode-off');
+            modeButton.style.backgroundColor = '#9E9E9E';
+
+            // 運転OFF
+            const controlButton = document.getElementById('controlButton');
+            controlButton.textContent = '運転\nOFF';
+            controlButton.classList.remove('control-on');
+            controlButton.classList.add('control-off');
+            controlButton.style.backgroundColor = '#9E9E9E';
+            document.getElementById('startTimer').disabled = true;
+            document.getElementById('stopTimer').disabled = true;
+        }
+
+        // ポート切断処理
+        async function disconnectSerial() {
+            try {
+                // 各種タイマーの停止
+                keepReading = false;
+                stopVoltageReading();
+                if (timerManager.isRunning()) {
+                    timerManager.stopTimer();
+                }
+                if (isRunning) {
+                    stopAutomation();
+                }
+
+                // 通信バッファのクリア
+                communicationBuffer.clear();
+
+                // ポートのクローズ
+                if (port) {
+                    await port.close();
+                    port = null;
+                }
+
+                // 接続状態の更新
+                document.getElementById('connectButton').disabled = false;
+                document.getElementById('disconnectButton').disabled = true;
+                document.getElementById('connectionStatus').textContent = '未接続';
+                document.getElementById('connectionStatus').className = 'status disconnected';
+                document.getElementById('statusText').textContent = 'シリアルポートから切断しました';
+
+                // UI要素の無効化
+                document.getElementById('saveDeviceSettings').disabled = true;
+                document.getElementById('writeButton').disabled = true;
+                document.getElementById('closeButton').disabled = true;
+                document.getElementById('percentInput').disabled = true;
+                document.getElementById('addRow').disabled = true;
+                document.getElementById('removeRow').disabled = true;
+                document.getElementById('startAutomation').disabled = true;
+                document.getElementById('stopAutomation').disabled = true;
+                document.getElementById('exportCSV').disabled = true;
+                document.getElementById('modeButton').disabled = true;
+                document.getElementById('controlButton').disabled = true;
+                document.getElementById('setTemp').disabled = true;
+                document.getElementById('return25').disabled = true;
+                document.getElementById('startTimer').disabled = true;
+                document.getElementById('stopTimer').disabled = true;
+                document.getElementById('tempSetpoint').disabled = true;
+                document.getElementById('timerDuration').disabled = true;
+                document.getElementById('timerTemp').disabled = true;
+                document.getElementById('syncDataCollection').disabled = true;
+                document.getElementById('timerAlarm').disabled = true; // アラームチェックボックスも無効化
+
+                // 表示情報のリセット
+                document.getElementById('temperatureValue').textContent = '--.-';
+                document.getElementById('setpointValue').textContent = '--.-';
+                document.getElementById('id1-fullscale').textContent = '--';
+                document.getElementById('id2-fullscale').textContent = '--';
+
+                // 自動化テーブルの入力フィールドを無効化
+                document.querySelectorAll('#automationTable .percent-input, #automationTable .time-input').forEach(input => {
+                    input.disabled = true;
+                });
+
+                console.log('シリアル切断完了');
+            } catch (error) {
+                console.error('切断エラー:', error);
+                document.getElementById('statusText').textContent = '切断中にエラーが発生しました: ' + error.message;
+            }
+        }
+    </script>
+    </body>
+    
+    </html>
