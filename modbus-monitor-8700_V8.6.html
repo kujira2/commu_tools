@@ -1121,7 +1121,7 @@
                 if (!this.stopRequested) {
                     // 100%の状態をさらに10秒間保持
                     let elapsedSeconds = (Date.now() - this.chartManager.startTime) / 1000;
-                    let targetTime = elapsedSeconds + 6;
+                    let targetTime = elapsedSeconds + 5;
                     while (elapsedSeconds < targetTime) {
                         if (this.stopRequested) break;
                         await this.updateFlowRate();
