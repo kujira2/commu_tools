@@ -28,8 +28,10 @@
     -webkit-font-smoothing:antialiased;
   }
   .wrap{max-width:640px;margin:0 auto;padding:24px 16px 56px}
-  .topbar{display:flex;justify-content:flex-end;gap:12px;margin-bottom:6px;flex-wrap:wrap}
-  .lang-box{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub)}
+  .topbar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:6px;flex-wrap:nowrap}
+  .lang-box{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub);flex:1 1 0;min-width:0;white-space:nowrap}
+  .lang-box span{flex:none}
+  .lang-box select.sel{flex:1 1 auto;min-width:0;width:100%}
 
   select.sel{
     -webkit-appearance:none; -moz-appearance:none; appearance:none;
@@ -37,7 +39,7 @@
     background-color:var(--chip);
     background-image:var(--arrow);
     background-repeat:no-repeat;
-    background-position:right 12px center;
+    background-position:right 9px center;
     background-size:12px 8px;
     border:1px solid transparent;
     border-radius:12px;
@@ -51,7 +53,7 @@
   select.sel:hover{background-color:var(--line)}
   select.sel:focus{border-color:var(--accent);background-color:var(--card)}
   select.sel option{color:var(--text);background:var(--card)}
-  select.sel.block{width:100%;font-size:15px;min-height:44px;padding:11px 36px 11px 14px}
+  select.sel.block{width:100%;font-size:15px;min-height:44px;padding:9px 26px 9px 10px}
 
   h1{margin:8px 0 4px;letter-spacing:-.3px}
   h1 .main{display:block;font-size:28px;font-weight:700}
@@ -170,6 +172,11 @@
   .empty{color:var(--sub);font-size:14px;text-align:center;padding:12px 0}
   .foot{text-align:center;color:var(--sub);font-size:12px;margin-top:20px;line-height:1.6}
   @media (min-width:768px){.wrap{padding-top:48px}}
+  @media (max-width:430px){
+  .lang-box{font-size:11px;gap:4px}
+  select.sel{font-size:13px;padding:8px 22px 8px 8px;background-position:right 7px center;background-size:10px 7px}
+  select.sel.block{font-size:15px;padding:11px 36px 11px 14px;background-position:right 12px center;background-size:12px 8px}
+}
 </style>
 </head>
 <body>
