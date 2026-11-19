@@ -35,19 +35,17 @@
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .field{margin-bottom:14px;position:relative}
 
-  /* 自訂選擇按鈕 */
   .picker-btn{
     width:100%;text-align:left;font:inherit;font-size:17px;color:var(--text);
     padding:12px 14px;border-radius:12px;border:1px solid transparent;
     background:var(--chip);min-height:46px;cursor:pointer;
-    display:flex;justify-content:space-between;align-items:center;
-    transition:background .15s,border-color .15s;
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+    transition:background .15s,border-color .15s,opacity .15s;
   }
   .picker-btn:hover{background:var(--line)}
   .picker-btn.open{border-color:var(--accent);background:var(--card)}
   .picker-btn svg{width:16px;height:16px;opacity:.5;flex:none}
 
-  /* 彈層 */
   .pop{
     position:absolute;z-index:50;left:0;top:calc(100% + 6px);
     background:var(--card);border-radius:16px;box-shadow:var(--shadow);
@@ -78,10 +76,9 @@
   .link{background:none;border:none;color:var(--accent);font:inherit;font-size:14px;cursor:pointer;padding:6px 10px;border-radius:8px}
   .link:hover{background:var(--accent-soft)}
 
-  /* 時間滾輪 */
   .tpop{width:200px;padding:10px}
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:6px;position:relative}
-  .col{height:208px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;padding:84px 0;text-align:center}
+  .col{height:208px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;padding:84px 0;text-align:center;position:relative;z-index:1}
   .col::-webkit-scrollbar{display:none}
   .opt{
     height:40px;line-height:40px;font-size:20px;scroll-snap-align:center;
@@ -92,7 +89,6 @@
     position:absolute;left:0;right:0;top:84px;height:40px;border-radius:10px;
     background:var(--chip);pointer-events:none;z-index:0;
   }
-  .col{position:relative;z-index:1}
   .tfoot{display:flex;justify-content:flex-end;margin-top:6px}
 
   .check{display:flex;align-items:center;gap:10px;font-size:15px;cursor:pointer;user-select:none}
@@ -113,7 +109,6 @@
   .date{font-size:13px;color:var(--sub)}
   .range{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap}
   .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);margin-left:6px;font-weight:500;vertical-align:middle}
-  .err{color:#d93025;font-size:14px;display:none;margin-top:10px}
   .foot{text-align:center;color:var(--sub);font-size:12px;margin-top:20px;line-height:1.6}
   @media (min-width:768px){.wrap{padding-top:56px}h1{font-size:34px}}
 </style>
@@ -121,7 +116,7 @@
 <body>
 <div class="wrap">
   <h1>時差換算</h1>
-  <p class="desc">輸入日本時間範圍，查看中國與英國的對應日期與時間。<br>英國夏令時 / 冬令時自動判斷。</p>
+  <p class="desc">輸入日本時間範圍，查看中國與英國的對應日期與時間。<br>英國夏令時 / 冬令時自動判斷，結束時間早於開始時間時視為隔天。</p>
 
   <div class="card">
     <h2>日本時間（JST）</h2>
@@ -163,7 +158,6 @@
       <span class="switch"><input type="checkbox" id="end24"><span class="slider"></span></span>
       結束時間為 24:00（隔天 0 點）
     </label>
-    <div class="err" id="err"></div>
   </div>
 
   <div class="card" id="results"></div>
@@ -255,7 +249,7 @@ function buildTimePop(popId, key){
     col.addEventListener('click',e=>{
       const o=e.target.closest('.opt'); if(!o) return;
       setPart(key,col.dataset.t,o.dataset.v);
-      scrollTo(col,o.dataset.v,true);
+      scrollToVal(col,o.dataset.v,true);
     });
     let t;
     col.addEventListener('scroll',()=>{
@@ -263,18 +257,19 @@ function buildTimePop(popId, key){
       t=setTimeout(()=>{
         const idx=Math.round(col.scrollTop/40);
         const o=col.children[Math.min(Math.max(idx,0),col.children.length-1)];
-        if(o && o.dataset.v!==undefined) setPart(key,col.dataset.t,o.dataset.v,true);
+        if(o && o.dataset.v!==undefined) setPart(key,col.dataset.t,o.dataset.v);
       },90);
     });
   });
   pop.querySelector('.link').onclick=()=>closeAll();
 }
-function scrollTo(col,v,smooth){
+function scrollToVal(col,v,smooth){
   col.scrollTo({top:parseInt(v,10)*40,behavior:smooth?'smooth':'auto'});
 }
-function setPart(key,part,v,fromScroll){
+function setPart(key,part,v){
   let [h,m]=state[key].split(':');
   if(part==='h')h=v; else m=v;
+  if(state[key]===`${h}:${m}`) return;
   state[key]=`${h}:${m}`;
   markSel(key); syncUI(); render();
 }
@@ -286,13 +281,13 @@ function markSel(key){
     col.querySelectorAll('.opt').forEach(o=>o.classList.toggle('sel',o.dataset.v===v));
   });
 }
-function openTime(popId,key,btnId){
+function openTime(popId,key){
   const open=toggle(popId);
   if(open){
     markSel(key);
     const [h,m]=state[key].split(':');
     const cols=$(popId).querySelectorAll('.col');
-    requestAnimationFrame(()=>{ scrollTo(cols[0],h); scrollTo(cols[1],m); });
+    requestAnimationFrame(()=>{ scrollToVal(cols[0],h); scrollToVal(cols[1],m); });
   }
 }
 $('startBtn').onclick=e=>{e.stopPropagation();openTime('startPop','start')};
@@ -310,7 +305,9 @@ function syncUI(){
   const wd=WD[new Date(y,m-1,d).getDay()];
   $('dateText').textContent=`${y}年${m}月${d}日（週${wd}）`;
   $('startText').textContent=state.start;
-  $('endText').textContent=$('end24').checked?'24:00':state.end;
+  const is24=$('end24').checked;
+  const crossDay=!is24 && state.end<=state.start;
+  $('endText').textContent=is24?'24:00':(crossDay?`${state.end}（隔天）`:state.end);
 }
 
 /* ===== 換算 ===== */
@@ -321,22 +318,24 @@ function jpToUTC(dateStr,timeStr,plusDay=0){
 }
 function fmt(ms,tz){
   const p=new Intl.DateTimeFormat('en-GB',{timeZone:tz,year:'numeric',month:'numeric',day:'numeric',
-    hour:'2-digit',minute:'2-digit',hourCycle:'h23',weekday:'short'})
+    hour:'2-digit',minute:'2-digit',hourCycle:'h23'})
     .formatToParts(new Date(ms)).reduce((a,x)=>(a[x.type]=x.value,a),{});
-  return {m:+p.month,d:+p.day,time:`${p.hour}:${p.minute}`,wd:p.weekday,key:`${p.year}-${p.month}-${p.day}`};
+  const wdIdx=new Date(Date.UTC(+p.year,+p.month-1,+p.day)).getUTCDay();
+  return {m:+p.month,d:+p.day,time:`${p.hour}:${p.minute}`,wd:`週${WD[wdIdx]}`,key:`${p.year}-${p.month}-${p.day}`};
 }
 function zoneName(ms,tz){
   return new Intl.DateTimeFormat('en-GB',{timeZone:tz,timeZoneName:'short'})
     .formatToParts(new Date(ms)).find(x=>x.type==='timeZoneName').value;
 }
 function render(){
-  const err=$('err'); err.style.display='none';
   const is24=$('end24').checked;
   const startMs=jpToUTC(state.date,state.start);
-  const endMs=is24?jpToUTC(state.date,'00:00',1):jpToUTC(state.date,state.end);
-  if(endMs<=startMs){
-    err.textContent='結束時間必須晚於開始時間';
-    err.style.display='block'; $('results').innerHTML=''; return;
+  let endMs;
+  if(is24){
+    endMs=jpToUTC(state.date,'00:00',1);
+  }else{
+    endMs=jpToUTC(state.date,state.end);
+    if(endMs<=startMs) endMs=jpToUTC(state.date,state.end,1);
   }
   let html='<h2>換算結果</h2>';
   ZONES.forEach((z,i)=>{
