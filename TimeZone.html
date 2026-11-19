@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>時差換算 · 日本 / 中國 / 英國</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#ffffff; --text:#1d1d1f; --sub:#6e6e73;
+    --line:#e5e5ea; --accent:#0071e3; --chip:#f0f0f3; --accent-soft:rgba(0,113,227,.12);
+    --jp:#d9534f; --cn:#e0a100; --uk:#2f6fdb;
+    --shadow:0 10px 40px rgba(0,0,0,.15);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#000; --card:#1c1c1e; --text:#f5f5f7; --sub:#98989f;
+      --line:#2c2c2e; --accent:#0a84ff; --chip:#2c2c2e; --accent-soft:rgba(10,132,255,.2);
+      --shadow:0 10px 40px rgba(0,0,0,.6);
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang TC","Hiragino Sans","Helvetica Neue",sans-serif;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:32px 16px 48px}
+  h1{font-size:28px;font-weight:700;margin:8px 0 4px;letter-spacing:-.3px}
+  .desc{color:var(--sub);font-size:15px;margin:0 0 24px;line-height:1.5}
+  .card{background:var(--card);border-radius:18px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:16px}
+  .card h2{font-size:13px;font-weight:600;color:var(--sub);margin:0 0 14px;text-transform:uppercase;letter-spacing:.5px}
+  label.l{display:block;font-size:13px;color:var(--sub);margin-bottom:6px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .field{margin-bottom:14px;position:relative}
+
+  /* 自訂選擇按鈕 */
+  .picker-btn{
+    width:100%;text-align:left;font:inherit;font-size:17px;color:var(--text);
+    padding:12px 14px;border-radius:12px;border:1px solid transparent;
+    background:var(--chip);min-height:46px;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;
+    transition:background .15s,border-color .15s;
+  }
+  .picker-btn:hover{background:var(--line)}
+  .picker-btn.open{border-color:var(--accent);background:var(--card)}
+  .picker-btn svg{width:16px;height:16px;opacity:.5;flex:none}
+
+  /* 彈層 */
+  .pop{
+    position:absolute;z-index:50;left:0;top:calc(100% + 6px);
+    background:var(--card);border-radius:16px;box-shadow:var(--shadow);
+    border:1px solid var(--line);padding:14px;display:none;
+    animation:pop .14s ease-out;
+  }
+  .pop.show{display:block}
+  @keyframes pop{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}
+  .cal{width:300px;max-width:calc(100vw - 64px)}
+  .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .cal-title{font-size:16px;font-weight:600}
+  .nav{
+    width:32px;height:32px;border-radius:50%;border:none;background:transparent;
+    color:var(--accent);font-size:20px;cursor:pointer;display:grid;place-items:center;
+  }
+  .nav:hover{background:var(--accent-soft)}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+  .wd{font-size:12px;color:var(--sub);padding:6px 0}
+  .day{
+    aspect-ratio:1;border:none;background:transparent;color:var(--text);
+    font:inherit;font-size:15px;border-radius:50%;cursor:pointer;
+  }
+  .day:hover{background:var(--chip)}
+  .day.today{color:var(--accent);font-weight:700}
+  .day.sel{background:var(--accent);color:#fff;font-weight:600}
+  .day.out{color:var(--sub);opacity:.35}
+  .cal-foot{display:flex;justify-content:center;margin-top:8px}
+  .link{background:none;border:none;color:var(--accent);font:inherit;font-size:14px;cursor:pointer;padding:6px 10px;border-radius:8px}
+  .link:hover{background:var(--accent-soft)}
+
+  /* 時間滾輪 */
+  .tpop{width:200px;padding:10px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:6px;position:relative}
+  .col{height:208px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;padding:84px 0;text-align:center}
+  .col::-webkit-scrollbar{display:none}
+  .opt{
+    height:40px;line-height:40px;font-size:20px;scroll-snap-align:center;
+    cursor:pointer;color:var(--sub);font-variant-numeric:tabular-nums;border-radius:10px;
+  }
+  .opt.sel{color:var(--text);font-weight:600}
+  .band{
+    position:absolute;left:0;right:0;top:84px;height:40px;border-radius:10px;
+    background:var(--chip);pointer-events:none;z-index:0;
+  }
+  .col{position:relative;z-index:1}
+  .tfoot{display:flex;justify-content:flex-end;margin-top:6px}
+
+  .check{display:flex;align-items:center;gap:10px;font-size:15px;cursor:pointer;user-select:none}
+  .switch{position:relative;width:46px;height:28px;flex:none}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .slider{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:.2s}
+  .slider:before{content:"";position:absolute;width:24px;height:24px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .switch input:checked+.slider{background:#34c759}
+  .switch input:checked+.slider:before{transform:translateX(18px)}
+
+  .result{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-top:1px solid var(--line);gap:12px}
+  .result.first{border-top:none;padding-top:4px}
+  .place{display:flex;align-items:center;gap:10px}
+  .dot{width:10px;height:10px;border-radius:50%;flex:none}
+  .name{font-size:17px;font-weight:600}
+  .tz{font-size:12px;color:var(--sub);margin-top:2px}
+  .time{text-align:right}
+  .date{font-size:13px;color:var(--sub)}
+  .range{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);margin-left:6px;font-weight:500;vertical-align:middle}
+  .err{color:#d93025;font-size:14px;display:none;margin-top:10px}
+  .foot{text-align:center;color:var(--sub);font-size:12px;margin-top:20px;line-height:1.6}
+  @media (min-width:768px){.wrap{padding-top:56px}h1{font-size:34px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>時差換算</h1>
+  <p class="desc">輸入日本時間範圍，查看中國與英國的對應日期與時間。<br>英國夏令時 / 冬令時自動判斷。</p>
+
+  <div class="card">
+    <h2>日本時間（JST）</h2>
+
+    <div class="field">
+      <label class="l">日期</label>
+      <button type="button" class="picker-btn" id="dateBtn"><span id="dateText"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      </button>
+      <div class="pop cal" id="calPop">
+        <div class="cal-head">
+          <button class="nav" id="prev" type="button">‹</button>
+          <div class="cal-title" id="calTitle"></div>
+          <button class="nav" id="next" type="button">›</button>
+        </div>
+        <div class="grid" id="calGrid"></div>
+        <div class="cal-foot"><button class="link" id="todayBtn" type="button">今天</button></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label class="l">開始</label>
+        <button type="button" class="picker-btn" id="startBtn"><span id="startText"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </button>
+        <div class="pop tpop" id="startPop"></div>
+      </div>
+      <div class="field">
+        <label class="l">結束</label>
+        <button type="button" class="picker-btn" id="endBtn"><span id="endText"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </button>
+        <div class="pop tpop" id="endPop" style="left:auto;right:0"></div>
+      </div>
+    </div>
+
+    <label class="check">
+      <span class="switch"><input type="checkbox" id="end24"><span class="slider"></span></span>
+      結束時間為 24:00（隔天 0 點）
+    </label>
+    <div class="err" id="err"></div>
+  </div>
+
+  <div class="card" id="results"></div>
+
+  <div class="foot">
+    日本 UTC+9　·　中國 UTC+8　·　英國 冬令 UTC+0 / 夏令 UTC+1<br>
+    英國夏令時：3 月最後一個週日 ～ 10 月最後一個週日
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2,'0');
+const WD = ['日','一','二','三','四','五','六'];
+const ZONES = [
+  {key:'jp', name:'日本', tz:'Asia/Tokyo', color:'var(--jp)'},
+  {key:'cn', name:'中國', tz:'Asia/Shanghai', color:'var(--cn)'},
+  {key:'uk', name:'英國', tz:'Europe/London', color:'var(--uk)'},
+];
+
+/* ===== 狀態 ===== */
+const todayStr = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo'}).format(new Date());
+const state = { date:todayStr, start:'22:00', end:'23:00' };
+let viewY, viewM;
+
+/* ===== 彈層管理 ===== */
+const pops = ['calPop','startPop','endPop'];
+const btns = {calPop:'dateBtn',startPop:'startBtn',endPop:'endBtn'};
+function closeAll(except){
+  pops.forEach(p=>{ if(p!==except){ $(p).classList.remove('show'); $(btns[p]).classList.remove('open'); }});
+}
+function toggle(p){
+  const open = !$(p).classList.contains('show');
+  closeAll(p);
+  $(p).classList.toggle('show',open);
+  $(btns[p]).classList.toggle('open',open);
+  return open;
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.field')) closeAll();
+});
+
+/* ===== 月曆 ===== */
+function buildCal(){
+  const first = new Date(viewY, viewM, 1);
+  const startOffset = first.getDay();
+  const daysIn = new Date(viewY, viewM+1, 0).getDate();
+  const prevDays = new Date(viewY, viewM, 0).getDate();
+  $('calTitle').textContent = `${viewY}年${viewM+1}月`;
+  let h = WD.map(w=>`<div class="wd">${w}</div>`).join('');
+  for(let i=0;i<42;i++){
+    let d, y=viewY, m=viewM, out=false;
+    if(i<startOffset){ d=prevDays-startOffset+i+1; m--; out=true; }
+    else if(i>=startOffset+daysIn){ d=i-startOffset-daysIn+1; m++; out=true; }
+    else d=i-startOffset+1;
+    const dt = new Date(y,m,d);
+    const s = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+    const cls = ['day', out?'out':'', s===todayStr?'today':'', s===state.date?'sel':''].join(' ');
+    h += `<button type="button" class="${cls}" data-d="${s}">${dt.getDate()}</button>`;
+  }
+  $('calGrid').innerHTML = h;
+}
+$('calGrid').addEventListener('click',e=>{
+  const b=e.target.closest('.day'); if(!b) return;
+  state.date=b.dataset.d; syncUI(); closeAll(); render();
+});
+$('prev').onclick=()=>{ viewM--; if(viewM<0){viewM=11;viewY--} buildCal(); };
+$('next').onclick=()=>{ viewM++; if(viewM>11){viewM=0;viewY++} buildCal(); };
+$('todayBtn').onclick=()=>{ state.date=todayStr; syncUI(); closeAll(); render(); };
+$('dateBtn').onclick=e=>{
+  e.stopPropagation();
+  const [y,m]=state.date.split('-').map(Number); viewY=y; viewM=m-1; buildCal();
+  toggle('calPop');
+};
+
+/* ===== 時間滾輪 ===== */
+function buildTimePop(popId, key){
+  const pop=$(popId);
+  const hours=Array.from({length:24},(_,i)=>pad(i));
+  const mins=Array.from({length:60},(_,i)=>pad(i));
+  pop.innerHTML=`
+    <div class="cols">
+      <div class="band"></div>
+      <div class="col" data-t="h">${hours.map(h=>`<div class="opt" data-v="${h}">${h}</div>`).join('')}</div>
+      <div class="col" data-t="m">${mins.map(m=>`<div class="opt" data-v="${m}">${m}</div>`).join('')}</div>
+    </div>
+    <div class="tfoot"><button class="link" type="button">完成</button></div>`;
+  pop.querySelectorAll('.col').forEach(col=>{
+    col.addEventListener('click',e=>{
+      const o=e.target.closest('.opt'); if(!o) return;
+      setPart(key,col.dataset.t,o.dataset.v);
+      scrollTo(col,o.dataset.v,true);
+    });
+    let t;
+    col.addEventListener('scroll',()=>{
+      clearTimeout(t);
+      t=setTimeout(()=>{
+        const idx=Math.round(col.scrollTop/40);
+        const o=col.children[Math.min(Math.max(idx,0),col.children.length-1)];
+        if(o && o.dataset.v!==undefined) setPart(key,col.dataset.t,o.dataset.v,true);
+      },90);
+    });
+  });
+  pop.querySelector('.link').onclick=()=>closeAll();
+}
+function scrollTo(col,v,smooth){
+  col.scrollTo({top:parseInt(v,10)*40,behavior:smooth?'smooth':'auto'});
+}
+function setPart(key,part,v,fromScroll){
+  let [h,m]=state[key].split(':');
+  if(part==='h')h=v; else m=v;
+  state[key]=`${h}:${m}`;
+  markSel(key); syncUI(); render();
+}
+function markSel(key){
+  const pop=$(key==='start'?'startPop':'endPop');
+  const [h,m]=state[key].split(':');
+  pop.querySelectorAll('.col').forEach(col=>{
+    const v=col.dataset.t==='h'?h:m;
+    col.querySelectorAll('.opt').forEach(o=>o.classList.toggle('sel',o.dataset.v===v));
+  });
+}
+function openTime(popId,key,btnId){
+  const open=toggle(popId);
+  if(open){
+    markSel(key);
+    const [h,m]=state[key].split(':');
+    const cols=$(popId).querySelectorAll('.col');
+    requestAnimationFrame(()=>{ scrollTo(cols[0],h); scrollTo(cols[1],m); });
+  }
+}
+$('startBtn').onclick=e=>{e.stopPropagation();openTime('startPop','start')};
+$('endBtn').onclick=e=>{e.stopPropagation(); if(!$('end24').checked) openTime('endPop','end')};
+
+/* ===== 24:00 開關 ===== */
+$('end24').addEventListener('change',()=>{
+  $('endBtn').style.opacity=$('end24').checked?.45:1;
+  closeAll(); syncUI(); render();
+});
+
+/* ===== 顯示同步 ===== */
+function syncUI(){
+  const [y,m,d]=state.date.split('-').map(Number);
+  const wd=WD[new Date(y,m-1,d).getDay()];
+  $('dateText').textContent=`${y}年${m}月${d}日（週${wd}）`;
+  $('startText').textContent=state.start;
+  $('endText').textContent=$('end24').checked?'24:00':state.end;
+}
+
+/* ===== 換算 ===== */
+function jpToUTC(dateStr,timeStr,plusDay=0){
+  const [y,m,d]=dateStr.split('-').map(Number);
+  const [hh,mm]=timeStr.split(':').map(Number);
+  return Date.UTC(y,m-1,d+plusDay,hh-9,mm);
+}
+function fmt(ms,tz){
+  const p=new Intl.DateTimeFormat('en-GB',{timeZone:tz,year:'numeric',month:'numeric',day:'numeric',
+    hour:'2-digit',minute:'2-digit',hourCycle:'h23',weekday:'short'})
+    .formatToParts(new Date(ms)).reduce((a,x)=>(a[x.type]=x.value,a),{});
+  return {m:+p.month,d:+p.day,time:`${p.hour}:${p.minute}`,wd:p.weekday,key:`${p.year}-${p.month}-${p.day}`};
+}
+function zoneName(ms,tz){
+  return new Intl.DateTimeFormat('en-GB',{timeZone:tz,timeZoneName:'short'})
+    .formatToParts(new Date(ms)).find(x=>x.type==='timeZoneName').value;
+}
+function render(){
+  const err=$('err'); err.style.display='none';
+  const is24=$('end24').checked;
+  const startMs=jpToUTC(state.date,state.start);
+  const endMs=is24?jpToUTC(state.date,'00:00',1):jpToUTC(state.date,state.end);
+  if(endMs<=startMs){
+    err.textContent='結束時間必須晚於開始時間';
+    err.style.display='block'; $('results').innerHTML=''; return;
+  }
+  let html='<h2>換算結果</h2>';
+  ZONES.forEach((z,i)=>{
+    const a=fmt(startMs,z.tz), b=fmt(endMs,z.tz), zn=zoneName(startMs,z.tz);
+    let badge='';
+    if(z.key==='uk') badge=`<span class="badge">${zn==='BST'?'夏令時 BST · UTC+1':'冬令時 GMT · UTC+0'}</span>`;
+    const same=a.key===b.key;
+    let endTime=b.time, endDate=same?'':`${b.m}月${b.d}日（${b.wd}）`;
+    if(b.time==='00:00'&&!same){
+      const prev=fmt(endMs-60000,z.tz);
+      if(prev.key===a.key){endTime='24:00';endDate='';}
+    }
+    html+=`<div class="result ${i===0?'first':''}">
+      <div class="place"><span class="dot" style="background:${z.color}"></span>
+        <div><div class="name">${z.name}${badge}</div><div class="tz">${z.tz} · ${zn}</div></div></div>
+      <div class="time"><div class="date">${a.m}月${a.d}日（${a.wd}）${endDate?` → ${endDate}`:''}</div>
+        <div class="range">${a.time} – ${endTime}</div></div></div>`;
+  });
+  $('results').innerHTML=html;
+}
+
+/* ===== 初始化 ===== */
+buildTimePop('startPop','start');
+buildTimePop('endPop','end');
+syncUI(); render();
+</script>
+</body>
+</html>
