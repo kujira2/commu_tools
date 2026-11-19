@@ -55,6 +55,25 @@
   select.sel option{color:var(--text);background:var(--card)}
   select.sel.block{width:100%;font-size:15px;min-height:44px;padding:9px 26px 9px 10px}
 
+  /* 下拉菜单样式与弹层统一（支持 base-select 的浏览器；其他保持原生，如 iPhone 滚轮） */
+  @supports (appearance:base-select){
+    select.sel,select.sel::picker(select){appearance:base-select}
+    select.sel::picker-icon{display:none}
+    select.sel::picker(select){
+      background:var(--card);border:1px solid var(--line);border-radius:14px;
+      box-shadow:var(--shadow);padding:6px;margin-top:6px;max-height:min(360px,60vh);
+    }
+    select.sel:open::picker(select){animation:pop .14s ease-out}
+    select.sel option{
+      color:var(--text);background:transparent;font-size:15px;
+      padding:9px 12px;border-radius:9px;cursor:pointer;gap:8px;
+    }
+    select.sel option:hover,select.sel option:focus-visible{background:var(--chip);outline:none}
+    select.sel option:checked{color:var(--accent);font-weight:600}
+    select.sel option::checkmark{color:var(--accent)}
+    select.sel option:disabled{opacity:.35;cursor:default;background:transparent}
+  }
+
   h1{margin:8px 0 4px;letter-spacing:-.3px}
   h1 .main{display:block;font-size:28px;font-weight:700}
   .sec{display:block;font-size:.8em;color:var(--sub);font-weight:400;line-height:1.3}
@@ -125,8 +144,10 @@
   .add-row{display:flex;justify-content:flex-end;margin-top:4px}
   .fab{
     width:46px;height:46px;border-radius:50%;border:none;background:var(--accent);color:#fff;
-    font-size:28px;line-height:1;cursor:pointer;box-shadow:0 4px 12px rgba(0,113,227,.35);
+    padding:0;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;box-shadow:0 4px 12px rgba(0,113,227,.35);
   }
+  .fab svg{display:block}
   .fab:active{transform:scale(.94)}
 
   .tz-search{
@@ -153,9 +174,31 @@
   .btn-primary .sec{color:rgba(255,255,255,.85)}
   .hint{font-size:12px;color:var(--sub);margin-top:8px;text-align:center}
 
-  .res-slot{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
-  .res-slot.first{border-top:none;padding-top:0;margin-top:0}
-  .res-title{font-size:12px;color:var(--sub);margin-bottom:6px}
+  /* ③ 横向滑动卡片 */
+  .res-track{
+    display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;
+    scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;scrollbar-width:none;
+    margin:0 -20px;padding:2px 20px 4px;scroll-padding:0 20px;
+  }
+  .res-track::-webkit-scrollbar{display:none}
+  .res-card{
+    flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;
+    border:1px solid var(--line);border-radius:16px;padding:12px 14px;background:var(--card);
+  }
+  .res-track.multi .res-card{flex-basis:calc(100% - 22px)}
+  .res-head{display:flex;flex-direction:column;gap:2px;
+    padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:2px}
+  .res-title{font-size:13px;font-weight:600;color:var(--accent)}
+  .res-base{font-size:12px;color:var(--sub)}
+  .res-nav{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:12px}
+  .dots{display:flex;gap:2px}
+  .dot{width:22px;height:22px;border:none;background:transparent;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .dot::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--line);transition:background .2s,transform .2s}
+  .dot.on::before{background:var(--accent);transform:scale(1.15)}
+  .res-arrow{display:none;width:32px;height:32px;border-radius:50%;border:none;background:var(--chip);color:var(--accent);font-size:20px;line-height:1;cursor:pointer}
+  .res-arrow:disabled{opacity:.35;cursor:default}
+  @media (hover:hover) and (pointer:fine){.res-arrow{display:inline-block}}
   .result{display:flex;justify-content:space-between;align-items:center;padding:10px 0;gap:10px}
   .place{min-width:0}
   .place .name{font-size:16px;font-weight:600}
@@ -163,15 +206,19 @@
   .tzc{font-size:12px;color:var(--sub);margin-top:2px}
   .time{text-align:right}
   .date{font-size:12.5px;color:var(--sub);line-height:1.5}
-/* 日期：主语言(前，正常大小) / 第二语言(后，0.8倍) */
+/* 日期：主语言(第1行，正常大小) / 第二语言(第2行，0.8倍) */
+  .date .d1,.date .d2{display:block;width:0;min-width:100%}/* 不撑宽右栏，宽度跟随时间范围 */
   .date .d1{font-size:1em}
   .date .d2{font-size:.8em}
-  .date .slash{font-size:.8em;opacity:.7;margin:0 2px}
   .range{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap}
   .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);margin-left:6px;font-weight:500;vertical-align:middle}
   .empty{color:var(--sub);font-size:14px;text-align:center;padding:12px 0}
   .foot{text-align:center;color:var(--sub);font-size:12px;margin-top:20px;line-height:1.6}
   @media (min-width:768px){.wrap{padding-top:48px}}
+  @media (max-width:500px){
+    .slot .row{grid-template-columns:1fr 1fr}
+    .slot .row .field:first-child{grid-column:1/-1}
+  }
   @media (max-width:430px){
   .lang-box{font-size:11px;gap:4px}
   select.sel{font-size:13px;padding:8px 22px 8px 8px;background-position:right 7px center;background-size:10px 7px}
@@ -207,7 +254,7 @@
   <div class="card">
     <h2 id="h2in"></h2>
     <div id="slots"></div>
-    <div class="add-row"><button class="fab" id="addSlot" type="button" aria-label="add">+</button></div>
+    <div class="add-row"><button class="fab" id="addSlot" type="button" aria-label="add"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
   </div>
 
   <!-- ② タイムゾーン選択 -->
@@ -501,6 +548,7 @@ $('addSlot').onclick=function(){
   var last=slots[slots.length-1];
   slots.push({date:last.date,start:last.start,end:last.end});
   renderSlots(); renderResults();
+  var tr=$('results').querySelector('.res-track'); if(tr) goCard(tr,slots.length-1);
   var els=document.querySelectorAll('.slot');
   els[els.length-1].scrollIntoView({behavior:'smooth',block:'center'});
 };
@@ -636,12 +684,13 @@ function fmtIn(ms,tz){
   var wi=new Date(Date.UTC(+p.year,+p.month-1,+p.day)).getUTCDay();
   return {y:+p.year,m:+p.month,d:+p.day,time:pad(hr)+':'+p.minute,wi:wi,key:p.year+'-'+p.month+'-'+p.day};
 }
-/* 日期：主语言(前) / 第二语言(后，0.8倍) */
-function mdHtml(f){
-  var main=Tl(L1,'md',f.m,f.d,I18N[L1].wdP+I18N[L1].wd[f.wi]);
+/* 日期：主语言(第1行) / 第二语言(第2行，0.8倍)；b 为跨日时的结束日期 */
+function mdOne(l,f){ return Tl(l,'md',f.m,f.d,I18N[l].wdP+I18N[l].wd[f.wi]); }
+function dateHtml(a,b){
+  var main=mdOne(L1,a)+(b?' → '+mdOne(L1,b):'');
   if(L2==='none'||L2===L1) return main;
-  var sec=Tl(L2,'md',f.m,f.d,I18N[L2].wdP+I18N[L2].wd[f.wi]);
-  return '<span class="d1">'+main+'</span><span class="slash">/</span><span class="d2">'+sec+'</span>';
+  var sec=mdOne(L2,a)+(b?' → '+mdOne(L2,b):'');
+  return '<span class="d1">'+main+'</span><span class="d2">'+sec+'</span>';
 }
 function renderResults(){
   var box=$('results');
@@ -650,28 +699,73 @@ function renderResults(){
   var html='<h2>'+T('resTitle')+'</h2>';
   if(!confirmed.length){ html+='<div class="empty">'+T('empty')+'</div>'; box.innerHTML=html; return; }
 
+  var oldTrack=box.querySelector('.res-track');
+  if(oldTrack) resIdx=trackIdx(oldTrack);
+  resIdx=Math.min(Math.max(resIdx,0),slots.length-1);
+
+  html+='<div class="res-track'+(slots.length>1?' multi':'')+'">';
   for(var idx=0;idx<slots.length;idx++){
     var s=slots[idx];
     var startMs=baseToUTC(baseTz,s.date,s.start,0);
     var endMs=baseToUTC(baseTz,s.date,s.end,0);
     if(endMs<=startMs) endMs=baseToUTC(baseTz,s.date,s.end,1);
-    html+='<div class="res-slot'+(idx===0?' first':'')+'">';
-    if(slots.length>1) html+='<div class="res-title">'+Tl(L1,'slot',idx+1)+'</div>';
+    html+='<div class="res-card">'
+      +'<div class="res-head"><span class="res-title">'+Tl(L1,'slot',idx+1)+'</span>'
+      +'<span class="res-base">'+dateText(s.date)+' '+s.start+' – '+endText(s)+'</span></div>';
     for(var c=0;c<confirmed.length;c++){
       var id=confirmed[c], t=findTz(id);
       var a=fmtIn(startMs,id), b=fmtIn(endMs,id);
       var same=a.key===b.key;
-      var endDate=same?'':mdHtml(b);
       var badge=isDst(id,startMs)?'<span class="badge">'+Tl(L1,'dst')+'</span>':'';
       html+='<div class="result"><div class="place"><div class="name">'+tzNameHtml(t)+badge+'</div>'
         +'<div class="tzc">'+offsetStr(id,startMs)+'</div></div>'
-        +'<div class="time"><div class="date">'+mdHtml(a)+(endDate?' → '+endDate:'')+'</div>'
+        +'<div class="time"><div class="date">'+dateHtml(a,same?null:b)+'</div>'
         +'<div class="range">'+a.time+' – '+b.time+'</div></div></div>';
     }
     html+='</div>';
   }
+  html+='</div>';
+  if(slots.length>1){
+    html+='<div class="res-nav"><button class="res-arrow" type="button" data-step="-1" aria-label="prev">‹</button><div class="dots">';
+    for(var di=0;di<slots.length;di++) html+='<button class="dot" type="button" data-go="'+di+'" aria-label="'+(di+1)+'"></button>';
+    html+='</div><button class="res-arrow" type="button" data-step="1" aria-label="next">›</button></div>';
+  }
   box.innerHTML=html;
+
+  var track=box.querySelector('.res-track');
+  track.scrollLeft=resIdx*cardStep(track);
+  updateNav(track);
+  var st;
+  track.addEventListener('scroll',function(){
+    clearTimeout(st);
+    st=setTimeout(function(){ resIdx=trackIdx(track); updateNav(track); },60);
+  },{passive:true});
 }
+
+/* 卡片滑动辅助 */
+var resIdx=0;
+function cardStep(track){
+  var c=track.querySelector('.res-card');
+  return c?c.offsetWidth+12:1;
+}
+function trackIdx(track){ return Math.round(track.scrollLeft/cardStep(track)); }
+function goCard(track,i){
+  i=Math.min(Math.max(i,0),track.children.length-1);
+  track.scrollTo({left:i*cardStep(track),behavior:'smooth'});
+}
+function updateNav(track){
+  var i=trackIdx(track), box=$('results');
+  var ds=box.querySelectorAll('.dot');
+  for(var k=0;k<ds.length;k++) ds[k].classList.toggle('on',k===i);
+  var ar=box.querySelectorAll('.res-arrow');
+  if(ar.length){ ar[0].disabled=i<=0; ar[1].disabled=i>=track.children.length-1; }
+}
+$('results').addEventListener('click',function(e){
+  var track=$('results').querySelector('.res-track'); if(!track) return;
+  var b=e.target.closest('[data-go],[data-step]'); if(!b) return;
+  if(b.hasAttribute('data-go')) goCard(track,+b.getAttribute('data-go'));
+  else goCard(track,trackIdx(track)+(+b.getAttribute('data-step')));
+});
 
 /* ============ 语言切换 ============ */
 $('langMain').onchange=function(){
