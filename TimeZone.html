@@ -1,22 +1,23 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>時差換算 · 日本 / 中國 / 英國</title>
+<title>時差換算</title>
 <style>
   :root{
     --bg:#f5f5f7; --card:#ffffff; --text:#1d1d1f; --sub:#6e6e73;
     --line:#e5e5ea; --accent:#0071e3; --chip:#f0f0f3; --accent-soft:rgba(0,113,227,.12);
-    --jp:#d9534f; --cn:#e0a100; --uk:#2f6fdb;
-    --shadow:0 10px 40px rgba(0,0,0,.15);
+    --shadow:0 10px 40px rgba(0,0,0,.15); --danger:#d93025;
+    --arrow:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5l5 5 5-5' fill='none' stroke='%236e6e73' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   }
   @media (prefers-color-scheme: dark){
     :root{
       --bg:#000; --card:#1c1c1e; --text:#f5f5f7; --sub:#98989f;
       --line:#2c2c2e; --accent:#0a84ff; --chip:#2c2c2e; --accent-soft:rgba(10,132,255,.2);
-      --shadow:0 10px 40px rgba(0,0,0,.6);
+      --shadow:0 10px 40px rgba(0,0,0,.6); --danger:#ff6961;
+      --arrow:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5l5 5 5-5' fill='none' stroke='%2398989f' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
     }
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -26,48 +27,71 @@
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     -webkit-font-smoothing:antialiased;
   }
-  .wrap{max-width:640px;margin:0 auto;padding:32px 16px 48px}
-  h1{font-size:28px;font-weight:700;margin:8px 0 4px;letter-spacing:-.3px}
-  .desc{color:var(--sub);font-size:15px;margin:0 0 24px;line-height:1.5}
+  .wrap{max-width:640px;margin:0 auto;padding:24px 16px 56px}
+  .topbar{display:flex;justify-content:flex-end;gap:12px;margin-bottom:6px;flex-wrap:wrap}
+  .lang-box{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub)}
+
+  /* ===== 統一的下拉選單樣式 ===== */
+  select.sel{
+    -webkit-appearance:none; -moz-appearance:none; appearance:none;
+    font:inherit; font-size:14px; line-height:1.2; color:var(--text);
+    background-color:var(--chip);
+    background-image:var(--arrow);
+    background-repeat:no-repeat;
+    background-position:right 12px center;
+    background-size:12px 8px;
+    border:1px solid transparent;
+    border-radius:12px;
+    padding:9px 34px 9px 14px;
+    min-height:38px;
+    cursor:pointer;
+    outline:none;
+    transition:background-color .15s,border-color .15s;
+    text-overflow:ellipsis;
+  }
+  select.sel:hover{background-color:var(--line)}
+  select.sel:focus{border-color:var(--accent);background-color:var(--card)}
+  select.sel option{color:var(--text);background:var(--card)}
+  select.sel.block{width:100%;font-size:15px;min-height:44px;padding:11px 36px 11px 14px}
+
+  h1{margin:8px 0 4px;letter-spacing:-.3px}
+  h1 .main{display:block;font-size:28px;font-weight:700}
+  .sec{display:block;font-size:.8em;color:var(--sub);font-weight:400;line-height:1.3}
+  h1 .sec{font-size:22.4px;font-weight:500;margin-bottom:2px}
+  .desc{color:var(--sub);font-size:15px;margin:0 0 20px;line-height:1.5}
   .card{background:var(--card);border-radius:18px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:16px}
-  .card h2{font-size:13px;font-weight:600;color:var(--sub);margin:0 0 14px;text-transform:uppercase;letter-spacing:.5px}
-  label.l{display:block;font-size:13px;color:var(--sub);margin-bottom:6px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .field{margin-bottom:14px;position:relative}
+  .card h2{font-size:13px;font-weight:600;color:var(--sub);margin:0 0 14px;letter-spacing:.3px}
+  .lbl{display:block;font-size:13px;color:var(--sub);margin-bottom:6px}
+  .field{position:relative}
 
   .picker-btn{
-    width:100%;text-align:left;font:inherit;font-size:17px;color:var(--text);
-    padding:12px 14px;border-radius:12px;border:1px solid transparent;
-    background:var(--chip);min-height:46px;cursor:pointer;
-    display:flex;justify-content:space-between;align-items:center;gap:8px;
-    transition:background .15s,border-color .15s,opacity .15s;
+    width:100%;text-align:left;font:inherit;font-size:16px;color:var(--text);
+    padding:11px 12px;border-radius:12px;border:1px solid transparent;
+    background:var(--chip);min-height:44px;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;gap:6px;
+    transition:background .15s,border-color .15s;
   }
   .picker-btn:hover{background:var(--line)}
   .picker-btn.open{border-color:var(--accent);background:var(--card)}
-  .picker-btn svg{width:16px;height:16px;opacity:.5;flex:none}
+  .picker-btn svg{width:15px;height:15px;opacity:.5;flex:none}
 
   .pop{
-    position:absolute;z-index:50;left:0;top:calc(100% + 6px);
+    position:absolute;z-index:60;left:0;top:calc(100% + 6px);
     background:var(--card);border-radius:16px;box-shadow:var(--shadow);
     border:1px solid var(--line);padding:14px;display:none;
     animation:pop .14s ease-out;
   }
   .pop.show{display:block}
+  .pop.right{left:auto;right:0}
   @keyframes pop{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}
-  .cal{width:300px;max-width:calc(100vw - 64px)}
+  .cal{width:300px;max-width:calc(100vw - 48px)}
   .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
   .cal-title{font-size:16px;font-weight:600}
-  .nav{
-    width:32px;height:32px;border-radius:50%;border:none;background:transparent;
-    color:var(--accent);font-size:20px;cursor:pointer;display:grid;place-items:center;
-  }
+  .nav{width:32px;height:32px;border-radius:50%;border:none;background:transparent;color:var(--accent);font-size:20px;cursor:pointer}
   .nav:hover{background:var(--accent-soft)}
   .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
   .wd{font-size:12px;color:var(--sub);padding:6px 0}
-  .day{
-    aspect-ratio:1;border:none;background:transparent;color:var(--text);
-    font:inherit;font-size:15px;border-radius:50%;cursor:pointer;
-  }
+  .day{height:38px;border:none;background:transparent;color:var(--text);font:inherit;font-size:15px;border-radius:50%;cursor:pointer;padding:0}
   .day:hover{background:var(--chip)}
   .day.today{color:var(--accent);font-weight:700}
   .day.sel{background:var(--accent);color:#fff;font-weight:600}
@@ -78,289 +102,579 @@
 
   .tpop{width:200px;padding:10px}
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:6px;position:relative}
-  .col{height:208px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;padding:84px 0;text-align:center;position:relative;z-index:1}
+  .col{height:208px;overflow-y:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:y mandatory;scrollbar-width:none;padding:84px 0;text-align:center;position:relative;z-index:1}
   .col::-webkit-scrollbar{display:none}
-  .opt{
-    height:40px;line-height:40px;font-size:20px;scroll-snap-align:center;
-    cursor:pointer;color:var(--sub);font-variant-numeric:tabular-nums;border-radius:10px;
-  }
+  .opt{height:40px;line-height:40px;font-size:20px;scroll-snap-align:center;cursor:pointer;color:var(--sub);font-variant-numeric:tabular-nums;border-radius:10px}
   .opt.sel{color:var(--text);font-weight:600}
-  .band{
-    position:absolute;left:0;right:0;top:84px;height:40px;border-radius:10px;
-    background:var(--chip);pointer-events:none;z-index:0;
-  }
+  .band{position:absolute;left:0;right:0;top:84px;height:40px;border-radius:10px;background:var(--chip);pointer-events:none;z-index:0}
   .tfoot{display:flex;justify-content:flex-end;margin-top:6px}
 
-  .check{display:flex;align-items:center;gap:10px;font-size:15px;cursor:pointer;user-select:none}
-  .switch{position:relative;width:46px;height:28px;flex:none}
-  .switch input{opacity:0;width:0;height:0;position:absolute}
-  .slider{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:.2s}
-  .slider:before{content:"";position:absolute;width:24px;height:24px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
-  .switch input:checked+.slider{background:#34c759}
-  .switch input:checked+.slider:before{transform:translateX(18px)}
+  .slot{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+  .slot-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .slot-no{font-size:12px;color:var(--sub)}
+  .del{width:26px;height:26px;border-radius:50%;border:none;background:var(--chip);color:var(--sub);font-size:16px;line-height:1;cursor:pointer}
+  .del:hover{background:var(--line);color:var(--danger)}
+  .slot .row{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:8px;align-items:end}
+  .slot .row .field{min-width:0}
+  .slot .row .lbl{margin-bottom:4px}
+  .slot .picker-btn{font-size:14px;padding:10px 8px;min-height:42px}
+  .slot .picker-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .slot .picker-btn svg{display:none}
 
-  .result{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-top:1px solid var(--line);gap:12px}
-  .result.first{border-top:none;padding-top:4px}
-  .place{display:flex;align-items:center;gap:10px}
-  .dot{width:10px;height:10px;border-radius:50%;flex:none}
-  .name{font-size:17px;font-weight:600}
-  .tz{font-size:12px;color:var(--sub);margin-top:2px}
+  .add-row{display:flex;justify-content:flex-end;margin-top:4px}
+  .fab{
+    width:46px;height:46px;border-radius:50%;border:none;background:var(--accent);color:#fff;
+    font-size:28px;line-height:1;cursor:pointer;box-shadow:0 4px 12px rgba(0,113,227,.35);
+  }
+  .fab:active{transform:scale(.94)}
+
+  .tz-search{
+    -webkit-appearance:none;appearance:none;
+    width:100%;font:inherit;font-size:16px;color:var(--text);background:var(--chip);
+    border:1px solid transparent;border-radius:12px;padding:11px 14px;margin-bottom:10px;outline:none;
+  }
+  .tz-search:focus{border-color:var(--accent);background:var(--card)}
+  .tz-list{max-height:220px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px}
+  .tz-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;font-size:15px}
+  .tz-item:last-child{border-bottom:none}
+  .tz-item:hover{background:var(--chip)}
+  .tz-item input{width:18px;height:18px;accent-color:var(--accent);flex:none}
+  .tz-item .tn{flex:1;min-width:0}
+  .tz-item .off{font-size:12px;color:var(--sub);white-space:nowrap}
+  .selected-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:5px 6px 5px 12px;font-size:13px}
+  .chip button{border:none;background:transparent;color:var(--accent);font-size:15px;cursor:pointer;padding:0 4px;line-height:1}
+  .btn-primary{
+    width:100%;margin-top:6px;padding:13px;border:none;border-radius:12px;
+    background:var(--accent);color:#fff;font:inherit;font-size:16px;font-weight:600;cursor:pointer;
+  }
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed}
+  .btn-primary .sec{color:rgba(255,255,255,.85)}
+  .hint{font-size:12px;color:var(--sub);margin-top:8px;text-align:center}
+
+  .res-slot{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+  .res-slot.first{border-top:none;padding-top:0;margin-top:0}
+  .res-title{font-size:12px;color:var(--sub);margin-bottom:6px}
+  .result{display:flex;justify-content:space-between;align-items:center;padding:10px 0;gap:10px}
+  .place .name{font-size:16px;font-weight:600}
+  .place .name .sec{font-weight:400}
+  .tzc{font-size:12px;color:var(--sub);margin-top:2px}
   .time{text-align:right}
-  .date{font-size:13px;color:var(--sub)}
-  .range{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap}
+  .date{font-size:12.5px;color:var(--sub)}
+  .range{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap}
   .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);margin-left:6px;font-weight:500;vertical-align:middle}
+  .empty{color:var(--sub);font-size:14px;text-align:center;padding:12px 0}
   .foot{text-align:center;color:var(--sub);font-size:12px;margin-top:20px;line-height:1.6}
-  @media (min-width:768px){.wrap{padding-top:56px}h1{font-size:34px}}
+  @media (min-width:768px){.wrap{padding-top:48px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>時差換算</h1>
-  <p class="desc">輸入日本時間範圍，查看中國與英國的對應日期與時間。<br>英國夏令時 / 冬令時自動判斷，結束時間早於開始時間時視為隔天。</p>
 
+  <div class="topbar">
+    <div class="lang-box"><span id="lbMain"></span>
+      <select class="sel" id="langMain">
+        <option value="ja">日本語</option>
+        <option value="en">English</option>
+        <option value="zh">中文</option>
+      </select>
+    </div>
+    <div class="lang-box"><span id="lbSec"></span>
+      <select class="sel" id="langSec">
+        <option value="none"></option>
+        <option value="ja">日本語</option>
+        <option value="en">English</option>
+        <option value="zh">中文</option>
+      </select>
+    </div>
+  </div>
+
+  <h1 id="title"></h1>
+  <p class="desc" id="desc"></p>
+
+  <!-- ① 日時入力 -->
   <div class="card">
-    <h2>日本時間（JST）</h2>
-
-    <div class="field">
-      <label class="l">日期</label>
-      <button type="button" class="picker-btn" id="dateBtn"><span id="dateText"></span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-      </button>
-      <div class="pop cal" id="calPop">
-        <div class="cal-head">
-          <button class="nav" id="prev" type="button">‹</button>
-          <div class="cal-title" id="calTitle"></div>
-          <button class="nav" id="next" type="button">›</button>
-        </div>
-        <div class="grid" id="calGrid"></div>
-        <div class="cal-foot"><button class="link" id="todayBtn" type="button">今天</button></div>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label class="l">開始</label>
-        <button type="button" class="picker-btn" id="startBtn"><span id="startText"></span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        </button>
-        <div class="pop tpop" id="startPop"></div>
-      </div>
-      <div class="field">
-        <label class="l">結束</label>
-        <button type="button" class="picker-btn" id="endBtn"><span id="endText"></span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        </button>
-        <div class="pop tpop" id="endPop" style="left:auto;right:0"></div>
-      </div>
-    </div>
-
-    <label class="check">
-      <span class="switch"><input type="checkbox" id="end24"><span class="slider"></span></span>
-      結束時間為 24:00（隔天 0 點）
-    </label>
+    <h2 id="h2in"></h2>
+    <div id="slots"></div>
+    <div class="add-row"><button class="fab" id="addSlot" type="button" aria-label="add">+</button></div>
   </div>
 
-  <div class="card" id="results"></div>
-
-  <div class="foot">
-    日本 UTC+9　·　中國 UTC+8　·　英國 冬令 UTC+0 / 夏令 UTC+1<br>
-    英國夏令時：3 月最後一個週日 ～ 10 月最後一個週日
+  <!-- ② タイムゾーン選択 -->
+  <div class="card">
+    <h2 id="h2tz"></h2>
+    <input type="text" class="tz-search" id="tzSearch">
+    <div class="tz-list" id="tzList"></div>
+    <div class="selected-chips" id="chips"></div>
+    <button class="btn-primary" id="confirmBtn" type="button"></button>
+    <div class="hint" id="tzHint"></div>
   </div>
+
+  <!-- ③ 結果 -->
+  <div class="card" id="results" style="display:none"></div>
+
+  <div class="foot" id="foot"></div>
 </div>
 
 <script>
-const $ = id => document.getElementById(id);
-const pad = n => String(n).padStart(2,'0');
-const WD = ['日','一','二','三','四','五','六'];
-const ZONES = [
-  {key:'jp', name:'日本', tz:'Asia/Tokyo', color:'var(--jp)'},
-  {key:'cn', name:'中國', tz:'Asia/Shanghai', color:'var(--cn)'},
-  {key:'uk', name:'英國', tz:'Europe/London', color:'var(--uk)'},
-];
+function $(id){return document.getElementById(id);}
+function pad(n){return String(n).padStart(2,'0');}
 
-/* ===== 狀態 ===== */
-const todayStr = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo'}).format(new Date());
-const state = { date:todayStr, start:'22:00', end:'23:00' };
-let viewY, viewM;
-
-/* ===== 彈層管理 ===== */
-const pops = ['calPop','startPop','endPop'];
-const btns = {calPop:'dateBtn',startPop:'startBtn',endPop:'endBtn'};
-function closeAll(except){
-  pops.forEach(p=>{ if(p!==except){ $(p).classList.remove('show'); $(btns[p]).classList.remove('open'); }});
-}
-function toggle(p){
-  const open = !$(p).classList.contains('show');
-  closeAll(p);
-  $(p).classList.toggle('show',open);
-  $(btns[p]).classList.toggle('open',open);
-  return open;
-}
-document.addEventListener('click',e=>{
-  if(!e.target.closest('.field')) closeAll();
-});
-
-/* ===== 月曆 ===== */
-function buildCal(){
-  const first = new Date(viewY, viewM, 1);
-  const startOffset = first.getDay();
-  const daysIn = new Date(viewY, viewM+1, 0).getDate();
-  const prevDays = new Date(viewY, viewM, 0).getDate();
-  $('calTitle').textContent = `${viewY}年${viewM+1}月`;
-  let h = WD.map(w=>`<div class="wd">${w}</div>`).join('');
-  for(let i=0;i<42;i++){
-    let d, y=viewY, m=viewM, out=false;
-    if(i<startOffset){ d=prevDays-startOffset+i+1; m--; out=true; }
-    else if(i>=startOffset+daysIn){ d=i-startOffset-daysIn+1; m++; out=true; }
-    else d=i-startOffset+1;
-    const dt = new Date(y,m,d);
-    const s = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
-    const cls = ['day', out?'out':'', s===todayStr?'today':'', s===state.date?'sel':''].join(' ');
-    h += `<button type="button" class="${cls}" data-d="${s}">${dt.getDate()}</button>`;
+/* ============ 多語言 ============ */
+var MONTHS_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var I18N={
+  ja:{
+    title:'時差換算', desc:'基準タイムゾーンの日時を入力し、選択した地域の時刻に換算します。終了が開始以前なら翌日として扱います。',
+    langMain:'表示言語', langSec:'第2言語', none:'なし',
+    h2in:'① 日時を入力', h2tz:'② タイムゾーンを選択',
+    search:'都市・地域を検索', confirm:'確認して表示',
+    hintSel:function(n){return n+' 件選択中';}, hintNone:'1つ以上選択してください',
+    base:'基準タイムゾーン', date:'日付', start:'開始', end:'終了',
+    slot:function(n){return '時間帯 '+n;}, next:'（翌日）',
+    resTitle:'③ 換算結果', empty:'タイムゾーンを選んで「確認して表示」を押してください',
+    today:'今日', wd:['日','月','火','水','木','金','土'], wdP:'',
+    ym:function(y,m){return y+'年'+m+'月';},
+    fmtDate:function(y,m,d,w){return y+'年'+m+'月'+d+'日（'+w+'）';},
+    md:function(m,d,w){return m+'月'+d+'日（'+w+'）';},
+    done:'完了', dst:'夏時間',
+    foot:'※ 夏時間（サマータイム）は日付に応じて自動判定されます。'
+  },
+  en:{
+    title:'Time Zone Converter', desc:'Enter date and time in the base time zone to convert to the selected regions. If end is earlier than start, it is treated as the next day.',
+    langMain:'Language', langSec:'2nd language', none:'None',
+    h2in:'① Enter date & time', h2tz:'② Select time zones',
+    search:'Search city / region', confirm:'Confirm & show',
+    hintSel:function(n){return n+' selected';}, hintNone:'Select at least one',
+    base:'Base time zone', date:'Date', start:'Start', end:'End',
+    slot:function(n){return 'Slot '+n;}, next:' (next day)',
+    resTitle:'③ Results', empty:'Select time zones and press "Confirm & show"',
+    today:'Today', wd:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], wdP:'',
+    ym:function(y,m){return MONTHS_EN[m-1]+' '+y;},
+    fmtDate:function(y,m,d,w){return w+', '+MONTHS_EN[m-1]+' '+d+', '+y;},
+    md:function(m,d,w){return w+', '+MONTHS_EN[m-1]+' '+d;},
+    done:'Done', dst:'DST',
+    foot:'* Daylight saving time is applied automatically based on the date.'
+  },
+  zh:{
+    title:'時差換算', desc:'輸入基準時區的日期與時間，換算成所選地區的時間。結束時間不晚於開始時間時視為隔天。',
+    langMain:'顯示語言', langSec:'第二語言', none:'無',
+    h2in:'① 輸入日期與時間', h2tz:'② 選擇時區',
+    search:'搜尋城市／地區', confirm:'確認並顯示',
+    hintSel:function(n){return '已選 '+n+' 個';}, hintNone:'請至少選擇一個',
+    base:'基準時區', date:'日期', start:'開始', end:'結束',
+    slot:function(n){return '時間段 '+n;}, next:'（隔天）',
+    resTitle:'③ 換算結果', empty:'請選擇時區並按「確認並顯示」',
+    today:'今天', wd:['日','一','二','三','四','五','六'], wdP:'週',
+    ym:function(y,m){return y+'年'+m+'月';},
+    fmtDate:function(y,m,d,w){return y+'年'+m+'月'+d+'日（'+w+'）';},
+    md:function(m,d,w){return m+'月'+d+'日（'+w+'）';},
+    done:'完成', dst:'夏令時',
+    foot:'※ 夏令時會依日期自動判斷。'
   }
-  $('calGrid').innerHTML = h;
+};
+var L1=localStorage.getItem('tz_l1')||'ja';
+var L2=localStorage.getItem('tz_l2')||'none';
+if(L2===L1)L2='none';
+
+function Tl(l,key){
+  var a=Array.prototype.slice.call(arguments,2);
+  var v=I18N[l][key];
+  return typeof v==='function'?v.apply(null,a):v;
 }
-$('calGrid').addEventListener('click',e=>{
-  const b=e.target.closest('.day'); if(!b) return;
-  state.date=b.dataset.d; syncUI(); closeAll(); render();
+function T(key){
+  var a=Array.prototype.slice.call(arguments,1);
+  var main=Tl.apply(null,[L1,key].concat(a));
+  if(L2==='none'||L2===L1) return main;
+  var sec=Tl.apply(null,[L2,key].concat(a));
+  return '<span class="sec">'+sec+'</span>'+main;
+}
+
+/* ============ 時區資料 ============ */
+var TZS=[
+  {id:'Asia/Tokyo',n:{ja:'日本（東京）',en:'Japan (Tokyo)',zh:'日本（東京）'}},
+  {id:'Asia/Seoul',n:{ja:'韓国（ソウル）',en:'South Korea (Seoul)',zh:'韓國（首爾）'}},
+  {id:'Asia/Shanghai',n:{ja:'中国（上海）',en:'China (Shanghai)',zh:'中國（上海）'}},
+  {id:'Asia/Hong_Kong',n:{ja:'香港',en:'Hong Kong',zh:'香港'}},
+  {id:'Asia/Taipei',n:{ja:'台湾（台北）',en:'Taiwan (Taipei)',zh:'台灣（台北）'}},
+  {id:'Asia/Singapore',n:{ja:'シンガポール',en:'Singapore',zh:'新加坡'}},
+  {id:'Asia/Bangkok',n:{ja:'タイ（バンコク）',en:'Thailand (Bangkok)',zh:'泰國（曼谷）'}},
+  {id:'Asia/Jakarta',n:{ja:'インドネシア（ジャカルタ）',en:'Indonesia (Jakarta)',zh:'印尼（雅加達）'}},
+  {id:'Asia/Kolkata',n:{ja:'インド（コルカタ）',en:'India (Kolkata)',zh:'印度（加爾各答）'}},
+  {id:'Asia/Dubai',n:{ja:'UAE（ドバイ）',en:'UAE (Dubai)',zh:'阿聯酋（杜拜）'}},
+  {id:'Europe/Moscow',n:{ja:'ロシア（モスクワ）',en:'Russia (Moscow)',zh:'俄羅斯（莫斯科）'}},
+  {id:'Europe/Istanbul',n:{ja:'トルコ（イスタンブール）',en:'Turkey (Istanbul)',zh:'土耳其（伊斯坦堡）'}},
+  {id:'Europe/Berlin',n:{ja:'ドイツ（ベルリン）',en:'Germany (Berlin)',zh:'德國（柏林）'}},
+  {id:'Europe/Paris',n:{ja:'フランス（パリ）',en:'France (Paris)',zh:'法國（巴黎）'}},
+  {id:'Europe/Rome',n:{ja:'イタリア（ローマ）',en:'Italy (Rome)',zh:'義大利（羅馬）'}},
+  {id:'Europe/Madrid',n:{ja:'スペイン（マドリード）',en:'Spain (Madrid)',zh:'西班牙（馬德里）'}},
+  {id:'Europe/London',n:{ja:'イギリス（ロンドン）',en:'UK (London)',zh:'英國（倫敦）'}},
+  {id:'UTC',n:{ja:'協定世界時（UTC）',en:'UTC',zh:'世界協調時間（UTC）'}},
+  {id:'America/Sao_Paulo',n:{ja:'ブラジル（サンパウロ）',en:'Brazil (São Paulo)',zh:'巴西（聖保羅）'}},
+  {id:'America/New_York',n:{ja:'アメリカ東部（ニューヨーク）',en:'US East (New York)',zh:'美東（紐約）'}},
+  {id:'America/Chicago',n:{ja:'アメリカ中部（シカゴ）',en:'US Central (Chicago)',zh:'美中（芝加哥）'}},
+  {id:'America/Denver',n:{ja:'アメリカ山岳部（デンバー）',en:'US Mountain (Denver)',zh:'美山區（丹佛）'}},
+  {id:'America/Los_Angeles',n:{ja:'アメリカ西部（ロサンゼルス）',en:'US West (Los Angeles)',zh:'美西（洛杉磯）'}},
+  {id:'America/Vancouver',n:{ja:'カナダ（バンクーバー）',en:'Canada (Vancouver)',zh:'加拿大（溫哥華）'}},
+  {id:'America/Toronto',n:{ja:'カナダ（トロント）',en:'Canada (Toronto)',zh:'加拿大（多倫多）'}},
+  {id:'Pacific/Honolulu',n:{ja:'ハワイ（ホノルル）',en:'Hawaii (Honolulu)',zh:'夏威夷（檀香山）'}},
+  {id:'Australia/Sydney',n:{ja:'オーストラリア（シドニー）',en:'Australia (Sydney)',zh:'澳洲（雪梨）'}},
+  {id:'Australia/Perth',n:{ja:'オーストラリア（パース）',en:'Australia (Perth)',zh:'澳洲（伯斯）'}},
+  {id:'Pacific/Auckland',n:{ja:'ニュージーランド（オークランド）',en:'New Zealand (Auckland)',zh:'紐西蘭（奧克蘭）'}}
+];
+function findTz(id){for(var i=0;i<TZS.length;i++)if(TZS[i].id===id)return TZS[i];return TZS[0];}
+function tzName(tz,l){return tz.n[l];}
+function tzNameHtml(tz){
+  if(L2==='none'||L2===L1) return tzName(tz,L1);
+  return '<span class="sec">'+tzName(tz,L2)+'</span>'+tzName(tz,L1);
+}
+
+/* ===== 時區偏移（通用算法） ===== */
+function tzOffsetMin(tz,ms){
+  try{
+    var f=new Intl.DateTimeFormat('en-US',{timeZone:tz,hour12:false,
+      year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',second:'numeric'});
+    var parts=f.formatToParts(new Date(ms)),p={};
+    for(var i=0;i<parts.length;i++)p[parts[i].type]=parts[i].value;
+    var asUTC=Date.UTC(+p.year,+p.month-1,+p.day,(+p.hour)%24,+p.minute,+p.second);
+    return Math.round((asUTC-Math.floor(ms/1000)*1000)/60000);
+  }catch(e){return 0;}
+}
+function offsetStr(id,ms){
+  var o=tzOffsetMin(id,ms);
+  if(o===0) return 'UTC±0';
+  var sign=o>0?'+':'-',a=Math.abs(o),h=Math.floor(a/60),m=a%60;
+  return 'UTC'+sign+h+(m?':'+pad(m):'');
+}
+function isDst(id,ms){
+  var y=new Date(ms).getUTCFullYear();
+  var jan=tzOffsetMin(id,Date.UTC(y,0,1)),jul=tzOffsetMin(id,Date.UTC(y,6,1));
+  if(jan===jul) return false;
+  return tzOffsetMin(id,ms)===Math.max(jan,jul);
+}
+
+/* ============ 狀態 ============ */
+var todayJP=(function(){
+  var o=tzOffsetMin('Asia/Tokyo',Date.now());
+  var d=new Date(Date.now()+o*60000);
+  return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate());
+})();
+var baseTz=localStorage.getItem('tz_base')||'Asia/Tokyo';
+var selected;
+try{selected=JSON.parse(localStorage.getItem('tz_sel')||'null');}catch(e){selected=null;}
+if(!selected||!selected.length) selected=['Asia/Tokyo','Asia/Shanghai','Europe/London'];
+var confirmed=selected.slice();
+var slots=[{date:todayJP,start:'22:00',end:'23:00'}];
+var showResults=true;
+
+/* ============ 彈層 ============ */
+function closeAllPops(){
+  var ps=document.querySelectorAll('.pop.show');
+  for(var i=0;i<ps.length;i++)ps[i].classList.remove('show');
+  var bs=document.querySelectorAll('.picker-btn.open');
+  for(var j=0;j<bs.length;j++)bs[j].classList.remove('open');
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.field')) closeAllPops();
 });
-$('prev').onclick=()=>{ viewM--; if(viewM<0){viewM=11;viewY--} buildCal(); };
-$('next').onclick=()=>{ viewM++; if(viewM>11){viewM=0;viewY++} buildCal(); };
-$('todayBtn').onclick=()=>{ state.date=todayStr; syncUI(); closeAll(); render(); };
-$('dateBtn').onclick=e=>{
-  e.stopPropagation();
-  const [y,m]=state.date.split('-').map(Number); viewY=y; viewM=m-1; buildCal();
-  toggle('calPop');
+
+/* ============ 靜態文字 ============ */
+function applyStatic(){
+  document.documentElement.lang=L1==='zh'?'zh-Hant':L1;
+  document.title=Tl(L1,'title');
+  $('lbMain').textContent=Tl(L1,'langMain');
+  $('lbSec').textContent=Tl(L1,'langSec');
+  $('langMain').value=L1;
+  var s2=$('langSec');
+  s2.options[0].textContent=Tl(L1,'none');
+  for(var i=0;i<s2.options.length;i++){
+    if(s2.options[i].value!=='none') s2.options[i].disabled=(s2.options[i].value===L1);
+  }
+  s2.value=L2;
+  $('title').innerHTML=((L2!=='none'&&L2!==L1)?'<span class="sec">'+Tl(L2,'title')+'</span>':'')+'<span class="main">'+Tl(L1,'title')+'</span>';
+  $('desc').innerHTML=T('desc');
+  $('h2in').innerHTML=T('h2in');
+  $('h2tz').innerHTML=T('h2tz');
+  $('tzSearch').placeholder=(L2!=='none'&&L2!==L1)?Tl(L1,'search')+' / '+Tl(L2,'search'):Tl(L1,'search');
+  $('confirmBtn').innerHTML=T('confirm');
+  $('foot').innerHTML=T('foot');
+}
+
+/* ============ 時區清單 ============ */
+function renderTzList(){
+  var q=$('tzSearch').value.trim().toLowerCase();
+  var now=Date.now(),h='';
+  for(var i=0;i<TZS.length;i++){
+    var t=TZS[i];
+    if(q){
+      var hit=t.id.toLowerCase().indexOf(q)>=0;
+      for(var k in t.n){ if(t.n[k].toLowerCase().indexOf(q)>=0) hit=true; }
+      if(!hit) continue;
+    }
+    h+='<label class="tz-item"><input type="checkbox" value="'+t.id+'" '+(selected.indexOf(t.id)>=0?'checked':'')+'>'
+      +'<span class="tn">'+tzNameHtml(t)+'</span><span class="off">'+offsetStr(t.id,now)+'</span></label>';
+  }
+  $('tzList').innerHTML=h;
+  renderChips();
+}
+function renderChips(){
+  var h='';
+  for(var i=0;i<selected.length;i++){
+    h+='<span class="chip">'+tzName(findTz(selected[i]),L1)+'<button type="button" data-id="'+selected[i]+'">×</button></span>';
+  }
+  $('chips').innerHTML=h;
+  $('confirmBtn').disabled=selected.length===0;
+  $('tzHint').textContent=selected.length?Tl(L1,'hintSel',selected.length):Tl(L1,'hintNone');
+}
+$('tzList').addEventListener('change',function(e){
+  var id=e.target.value;
+  if(e.target.checked){ if(selected.indexOf(id)<0) selected.push(id); }
+  else selected=selected.filter(function(x){return x!==id;});
+  localStorage.setItem('tz_sel',JSON.stringify(selected));
+  renderChips();
+});
+$('chips').addEventListener('click',function(e){
+  var b=e.target.closest('button'); if(!b)return;
+  selected=selected.filter(function(x){return x!==b.getAttribute('data-id');});
+  localStorage.setItem('tz_sel',JSON.stringify(selected));
+  renderTzList();
+});
+$('tzSearch').addEventListener('input',renderTzList);
+$('confirmBtn').onclick=function(){
+  confirmed=selected.slice(); showResults=true; renderResults();
+  $('results').scrollIntoView({behavior:'smooth',block:'start'});
 };
 
-/* ===== 時間滾輪 ===== */
-function buildTimePop(popId, key){
-  const pop=$(popId);
-  const hours=Array.from({length:24},(_,i)=>pad(i));
-  const mins=Array.from({length:60},(_,i)=>pad(i));
-  pop.innerHTML=`
-    <div class="cols">
-      <div class="band"></div>
-      <div class="col" data-t="h">${hours.map(h=>`<div class="opt" data-v="${h}">${h}</div>`).join('')}</div>
-      <div class="col" data-t="m">${mins.map(m=>`<div class="opt" data-v="${m}">${m}</div>`).join('')}</div>
-    </div>
-    <div class="tfoot"><button class="link" type="button">完成</button></div>`;
-  pop.querySelectorAll('.col').forEach(col=>{
-    col.addEventListener('click',e=>{
-      const o=e.target.closest('.opt'); if(!o) return;
-      setPart(key,col.dataset.t,o.dataset.v);
-      scrollToVal(col,o.dataset.v,true);
-    });
-    let t;
-    col.addEventListener('scroll',()=>{
-      clearTimeout(t);
-      t=setTimeout(()=>{
-        const idx=Math.round(col.scrollTop/40);
-        const o=col.children[Math.min(Math.max(idx,0),col.children.length-1)];
-        if(o && o.dataset.v!==undefined) setPart(key,col.dataset.t,o.dataset.v);
-      },90);
-    });
-  });
-  pop.querySelector('.link').onclick=()=>closeAll();
+/* ============ 時間段 ============ */
+function dateText(s){
+  var a=s.split('-').map(Number);
+  var w=I18N[L1].wd[new Date(a[0],a[1]-1,a[2]).getDay()];
+  return Tl(L1,'fmtDate',a[0],a[1],a[2],I18N[L1].wdP+w);
 }
-function scrollToVal(col,v,smooth){
-  col.scrollTo({top:parseInt(v,10)*40,behavior:smooth?'smooth':'auto'});
+function endText(s){
+  return s.end<=s.start?(s.end+Tl(L1,'next')):s.end;
 }
-function setPart(key,part,v){
-  let [h,m]=state[key].split(':');
-  if(part==='h')h=v; else m=v;
-  if(state[key]===`${h}:${m}`) return;
-  state[key]=`${h}:${m}`;
-  markSel(key); syncUI(); render();
-}
-function markSel(key){
-  const pop=$(key==='start'?'startPop':'endPop');
-  const [h,m]=state[key].split(':');
-  pop.querySelectorAll('.col').forEach(col=>{
-    const v=col.dataset.t==='h'?h:m;
-    col.querySelectorAll('.opt').forEach(o=>o.classList.toggle('sel',o.dataset.v===v));
-  });
-}
-function openTime(popId,key){
-  const open=toggle(popId);
-  if(open){
-    markSel(key);
-    const [h,m]=state[key].split(':');
-    const cols=$(popId).querySelectorAll('.col');
-    requestAnimationFrame(()=>{ scrollToVal(cols[0],h); scrollToVal(cols[1],m); });
-  }
-}
-$('startBtn').onclick=e=>{e.stopPropagation();openTime('startPop','start')};
-$('endBtn').onclick=e=>{e.stopPropagation(); if(!$('end24').checked) openTime('endPop','end')};
+var iconClock='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+var iconCal='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
 
-/* ===== 24:00 開關 ===== */
-$('end24').addEventListener('change',()=>{
-  $('endBtn').style.opacity=$('end24').checked?.45:1;
-  closeAll(); syncUI(); render();
+function renderSlots(){
+  var opts='';
+  for(var i=0;i<TZS.length;i++){
+    var t=TZS[i];
+    opts+='<option value="'+t.id+'" '+(t.id===baseTz?'selected':'')+'>'+tzName(t,L1)+((L2!=='none'&&L2!==L1)?' / '+tzName(t,L2):'')+'</option>';
+  }
+  var h='<div class="field" style="margin-bottom:12px"><span class="lbl">'+T('base')+'</span>'
+    +'<select class="sel block" id="baseSel">'+opts+'</select></div>';
+  for(var n=0;n<slots.length;n++){
+    var s=slots[n];
+    h+='<div class="slot" data-i="'+n+'">'
+      +'<div class="slot-head"><span class="slot-no">'+Tl(L1,'slot',n+1)+'</span>'
+      +(slots.length>1?'<button class="del" type="button" data-act="del">×</button>':'')+'</div>'
+      +'<div class="row">'
+      +'<div class="field"><span class="lbl">'+T('date')+'</span>'
+        +'<button type="button" class="picker-btn" data-act="date"><span>'+dateText(s.date)+'</span>'+iconCal+'</button>'
+        +'<div class="pop cal" data-pop="date"></div></div>'
+      +'<div class="field"><span class="lbl">'+T('start')+'</span>'
+        +'<button type="button" class="picker-btn" data-act="start"><span>'+s.start+'</span>'+iconClock+'</button>'
+        +'<div class="pop tpop" data-pop="start"></div></div>'
+      +'<div class="field"><span class="lbl">'+T('end')+'</span>'
+        +'<button type="button" class="picker-btn" data-act="end"><span>'+endText(s)+'</span>'+iconClock+'</button>'
+        +'<div class="pop tpop right" data-pop="end"></div></div>'
+      +'</div></div>';
+  }
+  $('slots').innerHTML=h;
+  $('baseSel').onchange=function(){
+    baseTz=this.value; localStorage.setItem('tz_base',baseTz); renderResults();
+  };
+}
+
+$('addSlot').onclick=function(){
+  var last=slots[slots.length-1];
+  slots.push({date:last.date,start:last.start,end:last.end});
+  renderSlots(); renderResults();
+  var els=document.querySelectorAll('.slot');
+  els[els.length-1].scrollIntoView({behavior:'smooth',block:'center'});
+};
+
+$('slots').addEventListener('click',function(e){
+  var slotEl=e.target.closest('.slot'); if(!slotEl) return;
+  var i=+slotEl.getAttribute('data-i'), s=slots[i];
+
+  if(e.target.closest('[data-act="del"]')){
+    slots.splice(i,1); renderSlots(); renderResults(); return;
+  }
+  var btn=e.target.closest('.picker-btn');
+  if(btn){
+    e.stopPropagation();
+    var act=btn.getAttribute('data-act');
+    var pop=btn.parentElement.querySelector('.pop');
+    var wasOpen=pop.classList.contains('show');
+    closeAllPops();
+    if(wasOpen) return;
+    pop.classList.add('show'); btn.classList.add('open');
+    if(act==='date') openCal(pop,i); else openTime(pop,i,act);
+    return;
+  }
+  var nav=e.target.closest('[data-nav]');
+  if(nav){
+    e.stopPropagation();
+    var pp=nav.closest('.pop'), v=pp._view, y=v[0], m=v[1]+(+nav.getAttribute('data-nav'));
+    if(m<0){m=11;y--;} if(m>11){m=0;y++;}
+    pp._view=[y,m]; drawCal(pp,i); return;
+  }
+  var day=e.target.closest('.day');
+  if(day){ s.date=day.getAttribute('data-d'); renderSlots(); renderResults(); return; }
+  if(e.target.closest('[data-today]')){ s.date=todayJP; renderSlots(); renderResults(); return; }
+  var opt=e.target.closest('.opt');
+  if(opt){
+    var col=opt.parentElement, pop2=col.closest('.pop'), key=pop2.getAttribute('data-pop');
+    setTimePart(i,key,col.getAttribute('data-t'),opt.getAttribute('data-v'),pop2);
+    col.scrollTo({top:parseInt(opt.getAttribute('data-v'),10)*40,behavior:'smooth'}); return;
+  }
+  if(e.target.closest('[data-done]')){ closeAllPops(); return; }
 });
 
-/* ===== 顯示同步 ===== */
-function syncUI(){
-  const [y,m,d]=state.date.split('-').map(Number);
-  const wd=WD[new Date(y,m-1,d).getDay()];
-  $('dateText').textContent=`${y}年${m}月${d}日（週${wd}）`;
-  $('startText').textContent=state.start;
-  const is24=$('end24').checked;
-  const crossDay=!is24 && state.end<=state.start;
-  $('endText').textContent=is24?'24:00':(crossDay?`${state.end}（隔天）`:state.end);
+/* 月曆 */
+function openCal(pop,i){
+  var a=slots[i].date.split('-').map(Number);
+  pop._view=[a[0],a[1]-1]; drawCal(pop,i);
 }
-
-/* ===== 換算 ===== */
-function jpToUTC(dateStr,timeStr,plusDay=0){
-  const [y,m,d]=dateStr.split('-').map(Number);
-  const [hh,mm]=timeStr.split(':').map(Number);
-  return Date.UTC(y,m-1,d+plusDay,hh-9,mm);
-}
-function fmt(ms,tz){
-  const p=new Intl.DateTimeFormat('en-GB',{timeZone:tz,year:'numeric',month:'numeric',day:'numeric',
-    hour:'2-digit',minute:'2-digit',hourCycle:'h23'})
-    .formatToParts(new Date(ms)).reduce((a,x)=>(a[x.type]=x.value,a),{});
-  const wdIdx=new Date(Date.UTC(+p.year,+p.month-1,+p.day)).getUTCDay();
-  return {m:+p.month,d:+p.day,time:`${p.hour}:${p.minute}`,wd:`週${WD[wdIdx]}`,key:`${p.year}-${p.month}-${p.day}`};
-}
-function zoneName(ms,tz){
-  return new Intl.DateTimeFormat('en-GB',{timeZone:tz,timeZoneName:'short'})
-    .formatToParts(new Date(ms)).find(x=>x.type==='timeZoneName').value;
-}
-function render(){
-  const is24=$('end24').checked;
-  const startMs=jpToUTC(state.date,state.start);
-  let endMs;
-  if(is24){
-    endMs=jpToUTC(state.date,'00:00',1);
-  }else{
-    endMs=jpToUTC(state.date,state.end);
-    if(endMs<=startMs) endMs=jpToUTC(state.date,state.end,1);
+function drawCal(pop,i){
+  var vy=pop._view[0], vm=pop._view[1], s=slots[i];
+  var first=new Date(vy,vm,1).getDay();
+  var dim=new Date(vy,vm+1,0).getDate();
+  var prev=new Date(vy,vm,0).getDate();
+  var h='<div class="cal-head"><button class="nav" type="button" data-nav="-1">‹</button>'
+    +'<div class="cal-title">'+Tl(L1,'ym',vy,vm+1)+'</div>'
+    +'<button class="nav" type="button" data-nav="1">›</button></div><div class="grid">';
+  var w=I18N[L1].wd;
+  for(var x=0;x<7;x++) h+='<div class="wd">'+w[x]+'</div>';
+  for(var k=0;k<42;k++){
+    var d,m=vm,out=false;
+    if(k<first){d=prev-first+k+1;m--;out=true;}
+    else if(k>=first+dim){d=k-first-dim+1;m++;out=true;}
+    else d=k-first+1;
+    var dt=new Date(vy,m,d);
+    var str=dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate());
+    h+='<button type="button" class="day '+(out?'out ':'')+(str===todayJP?'today ':'')+(str===s.date?'sel':'')+'" data-d="'+str+'">'+dt.getDate()+'</button>';
   }
-  let html='<h2>換算結果</h2>';
-  ZONES.forEach((z,i)=>{
-    const a=fmt(startMs,z.tz), b=fmt(endMs,z.tz), zn=zoneName(startMs,z.tz);
-    let badge='';
-    if(z.key==='uk') badge=`<span class="badge">${zn==='BST'?'夏令時 BST · UTC+1':'冬令時 GMT · UTC+0'}</span>`;
-    const same=a.key===b.key;
-    let endTime=b.time, endDate=same?'':`${b.m}月${b.d}日（${b.wd}）`;
-    if(b.time==='00:00'&&!same){
-      const prev=fmt(endMs-60000,z.tz);
-      if(prev.key===a.key){endTime='24:00';endDate='';}
-    }
-    html+=`<div class="result ${i===0?'first':''}">
-      <div class="place"><span class="dot" style="background:${z.color}"></span>
-        <div><div class="name">${z.name}${badge}</div><div class="tz">${z.tz} · ${zn}</div></div></div>
-      <div class="time"><div class="date">${a.m}月${a.d}日（${a.wd}）${endDate?` → ${endDate}`:''}</div>
-        <div class="range">${a.time} – ${endTime}</div></div></div>`;
-  });
-  $('results').innerHTML=html;
+  h+='</div><div class="cal-foot"><button class="link" type="button" data-today>'+Tl(L1,'today')+'</button></div>';
+  pop.innerHTML=h;
 }
 
-/* ===== 初始化 ===== */
-buildTimePop('startPop','start');
-buildTimePop('endPop','end');
-syncUI(); render();
+/* 時間滾輪 */
+function openTime(pop,i,key){
+  var hh='',mm='',k;
+  for(k=0;k<24;k++) hh+='<div class="opt" data-v="'+pad(k)+'">'+pad(k)+'</div>';
+  for(k=0;k<60;k++) mm+='<div class="opt" data-v="'+pad(k)+'">'+pad(k)+'</div>';
+  pop.innerHTML='<div class="cols"><div class="band"></div>'
+    +'<div class="col" data-t="h">'+hh+'</div><div class="col" data-t="m">'+mm+'</div></div>'
+    +'<div class="tfoot"><button class="link" type="button" data-done>'+Tl(L1,'done')+'</button></div>';
+  var tm=slots[i][key].split(':');
+  markTime(pop,tm[0],tm[1]);
+  var cols=pop.querySelectorAll('.col');
+  setTimeout(function(){ cols[0].scrollTop=(+tm[0])*40; cols[1].scrollTop=(+tm[1])*40; },0);
+  for(var c=0;c<cols.length;c++){
+    (function(col){
+      var t;
+      col.addEventListener('scroll',function(){
+        clearTimeout(t);
+        t=setTimeout(function(){
+          var idx=Math.min(Math.max(Math.round(col.scrollTop/40),0),col.children.length-1);
+          setTimePart(i,key,col.getAttribute('data-t'),col.children[idx].getAttribute('data-v'),pop);
+        },90);
+      });
+    })(cols[c]);
+  }
+}
+function markTime(pop,h,m){
+  var cols=pop.querySelectorAll('.col');
+  for(var c=0;c<cols.length;c++){
+    var v=cols[c].getAttribute('data-t')==='h'?h:m;
+    var os=cols[c].querySelectorAll('.opt');
+    for(var o=0;o<os.length;o++){
+      if(os[o].getAttribute('data-v')===v) os[o].classList.add('sel'); else os[o].classList.remove('sel');
+    }
+  }
+}
+function setTimePart(i,key,part,v,pop){
+  var tm=slots[i][key].split(':'), h=tm[0], m=tm[1];
+  if(part==='h')h=v; else m=v;
+  if(slots[i][key]===h+':'+m) return;
+  slots[i][key]=h+':'+m;
+  markTime(pop,h,m);
+  var slotEl=pop.closest('.slot');
+  slotEl.querySelector('[data-act="'+key+'"] span').textContent=(key==='end')?endText(slots[i]):slots[i][key];
+  if(key==='start'){
+    slotEl.querySelector('[data-act="end"] span').textContent=endText(slots[i]);
+  }
+  renderResults();
+}
+
+/* ============ 換算 ============ */
+function baseToUTC(tz,dateStr,timeStr,plusDay){
+  var a=dateStr.split('-').map(Number), b=timeStr.split(':').map(Number);
+  var guess=Date.UTC(a[0],a[1]-1,a[2]+plusDay,b[0],b[1]);
+  var ms=guess;
+  for(var k=0;k<3;k++){ ms=guess-tzOffsetMin(tz,ms)*60000; }
+  return ms;
+}
+function fmtIn(ms,tz){
+  var f=new Intl.DateTimeFormat('en-GB',{timeZone:tz,year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+  var parts=f.formatToParts(new Date(ms)),p={};
+  for(var i=0;i<parts.length;i++)p[parts[i].type]=parts[i].value;
+  var hr=(+p.hour)%24;
+  var wi=new Date(Date.UTC(+p.year,+p.month-1,+p.day)).getUTCDay();
+  return {y:+p.year,m:+p.month,d:+p.day,time:pad(hr)+':'+p.minute,wi:wi,key:p.year+'-'+p.month+'-'+p.day};
+}
+function mdHtml(f){
+  return Tl(L1,'md',f.m,f.d,I18N[L1].wdP+I18N[L1].wd[f.wi]);
+}
+function renderResults(){
+  var box=$('results');
+  if(!showResults){box.style.display='none';return;}
+  box.style.display='block';
+  var html='<h2>'+T('resTitle')+'</h2>';
+  if(!confirmed.length){ html+='<div class="empty">'+T('empty')+'</div>'; box.innerHTML=html; return; }
+
+  for(var idx=0;idx<slots.length;idx++){
+    var s=slots[idx];
+    var startMs=baseToUTC(baseTz,s.date,s.start,0);
+    var endMs=baseToUTC(baseTz,s.date,s.end,0);
+    if(endMs<=startMs) endMs=baseToUTC(baseTz,s.date,s.end,1);
+    html+='<div class="res-slot'+(idx===0?' first':'')+'">';
+    if(slots.length>1) html+='<div class="res-title">'+Tl(L1,'slot',idx+1)+'</div>';
+    for(var c=0;c<confirmed.length;c++){
+      var id=confirmed[c], t=findTz(id);
+      var a=fmtIn(startMs,id), b=fmtIn(endMs,id);
+      var same=a.key===b.key;
+      var endDate=same?'':mdHtml(b);
+      var badge=isDst(id,startMs)?'<span class="badge">'+Tl(L1,'dst')+'</span>':'';
+      html+='<div class="result"><div class="place"><div class="name">'+tzNameHtml(t)+badge+'</div>'
+        +'<div class="tzc">'+offsetStr(id,startMs)+'</div></div>'
+        +'<div class="time"><div class="date">'+mdHtml(a)+(endDate?' → '+endDate:'')+'</div>'
+        +'<div class="range">'+a.time+' – '+b.time+'</div></div></div>';
+    }
+    html+='</div>';
+  }
+  box.innerHTML=html;
+}
+
+/* ============ 語言切換 ============ */
+$('langMain').onchange=function(){
+  L1=this.value; if(L2===L1)L2='none';
+  localStorage.setItem('tz_l1',L1); localStorage.setItem('tz_l2',L2); refreshAll();
+};
+$('langSec').onchange=function(){
+  L2=this.value; if(L2===L1)L2='none';
+  localStorage.setItem('tz_l2',L2); refreshAll();
+};
+function refreshAll(){ closeAllPops(); applyStatic(); renderTzList(); renderSlots(); renderResults(); }
+
+/* ============ 初始化 ============ */
+try{ refreshAll(); }
+catch(err){
+  document.body.insertAdjacentHTML('afterbegin',
+    '<pre style="color:#d93025;padding:12px;white-space:pre-wrap;font-size:13px">Error: '+err.message+'</pre>');
+}
 </script>
 </body>
 </html>
