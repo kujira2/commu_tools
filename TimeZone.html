@@ -23,7 +23,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   body{
     margin:0; background:var(--bg); color:var(--text);
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang TC","Hiragino Sans","Helvetica Neue",sans-serif;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans","Helvetica Neue",sans-serif;
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     -webkit-font-smoothing:antialiased;
   }
@@ -31,7 +31,6 @@
   .topbar{display:flex;justify-content:flex-end;gap:12px;margin-bottom:6px;flex-wrap:wrap}
   .lang-box{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub)}
 
-  /* ===== 統一的下拉選單樣式 ===== */
   select.sel{
     -webkit-appearance:none; -moz-appearance:none; appearance:none;
     font:inherit; font-size:14px; line-height:1.2; color:var(--text);
@@ -176,7 +175,7 @@
       <select class="sel" id="langMain">
         <option value="ja">日本語</option>
         <option value="en">English</option>
-        <option value="zh">中文</option>
+        <option value="zh">简体中文</option>
       </select>
     </div>
     <div class="lang-box"><span id="lbSec"></span>
@@ -184,7 +183,7 @@
         <option value="none"></option>
         <option value="ja">日本語</option>
         <option value="en">English</option>
-        <option value="zh">中文</option>
+        <option value="zh">简体中文</option>
       </select>
     </div>
   </div>
@@ -219,7 +218,7 @@
 function $(id){return document.getElementById(id);}
 function pad(n){return String(n).padStart(2,'0');}
 
-/* ============ 多語言 ============ */
+/* ============ 多语言 ============ */
 var MONTHS_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var I18N={
   ja:{
@@ -255,20 +254,20 @@ var I18N={
     foot:'* Daylight saving time is applied automatically based on the date.'
   },
   zh:{
-    title:'時差換算', desc:'輸入基準時區的日期與時間，換算成所選地區的時間。結束時間不晚於開始時間時視為隔天。',
-    langMain:'顯示語言', langSec:'第二語言', none:'無',
-    h2in:'① 輸入日期與時間', h2tz:'② 選擇時區',
-    search:'搜尋城市／地區', confirm:'確認並顯示',
-    hintSel:function(n){return '已選 '+n+' 個';}, hintNone:'請至少選擇一個',
-    base:'基準時區', date:'日期', start:'開始', end:'結束',
-    slot:function(n){return '時間段 '+n;}, next:'（隔天）',
-    resTitle:'③ 換算結果', empty:'請選擇時區並按「確認並顯示」',
-    today:'今天', wd:['日','一','二','三','四','五','六'], wdP:'週',
+    title:'时差换算', desc:'输入基准时区的日期与时间，换算成所选地区的时间。结束时间不晚于开始时间时视为次日。',
+    langMain:'显示语言', langSec:'第二语言', none:'无',
+    h2in:'① 输入日期与时间', h2tz:'② 选择时区',
+    search:'搜索城市／地区', confirm:'确认并显示',
+    hintSel:function(n){return '已选 '+n+' 个';}, hintNone:'请至少选择一个',
+    base:'基准时区', date:'日期', start:'开始', end:'结束',
+    slot:function(n){return '时间段 '+n;}, next:'（次日）',
+    resTitle:'③ 换算结果', empty:'请选择时区并点击“确认并显示”',
+    today:'今天', wd:['日','一','二','三','四','五','六'], wdP:'周',
     ym:function(y,m){return y+'年'+m+'月';},
     fmtDate:function(y,m,d,w){return y+'年'+m+'月'+d+'日（'+w+'）';},
     md:function(m,d,w){return m+'月'+d+'日（'+w+'）';},
-    done:'完成', dst:'夏令時',
-    foot:'※ 夏令時會依日期自動判斷。'
+    done:'完成', dst:'夏令时',
+    foot:'※ 夏令时会根据日期自动判断。'
   }
 };
 var L1=localStorage.getItem('tz_l1')||'ja';
@@ -288,37 +287,37 @@ function T(key){
   return '<span class="sec">'+sec+'</span>'+main;
 }
 
-/* ============ 時區資料 ============ */
+/* ============ 时区数据 ============ */
 var TZS=[
-  {id:'Asia/Tokyo',n:{ja:'日本（東京）',en:'Japan (Tokyo)',zh:'日本（東京）'}},
-  {id:'Asia/Seoul',n:{ja:'韓国（ソウル）',en:'South Korea (Seoul)',zh:'韓國（首爾）'}},
-  {id:'Asia/Shanghai',n:{ja:'中国（上海）',en:'China (Shanghai)',zh:'中國（上海）'}},
-  {id:'Asia/Hong_Kong',n:{ja:'香港',en:'Hong Kong',zh:'香港'}},
-  {id:'Asia/Taipei',n:{ja:'台湾（台北）',en:'Taiwan (Taipei)',zh:'台灣（台北）'}},
+  {id:'Asia/Tokyo',n:{ja:'日本（東京）',en:'Japan (Tokyo)',zh:'日本（东京）'}},
+  {id:'Asia/Seoul',n:{ja:'韓国（ソウル）',en:'South Korea (Seoul)',zh:'韩国（首尔）'}},
+  {id:'Asia/Shanghai',n:{ja:'中国（上海）',en:'China (Shanghai)',zh:'中国（上海）'}},
+  {id:'Asia/Hong_Kong',n:{ja:'香港',en:'Hong Kong',zh:'中国香港'}},
+  {id:'Asia/Taipei',n:{ja:'台湾（台北）',en:'Taiwan (Taipei)',zh:'中国台湾（台北）'}},
   {id:'Asia/Singapore',n:{ja:'シンガポール',en:'Singapore',zh:'新加坡'}},
-  {id:'Asia/Bangkok',n:{ja:'タイ（バンコク）',en:'Thailand (Bangkok)',zh:'泰國（曼谷）'}},
-  {id:'Asia/Jakarta',n:{ja:'インドネシア（ジャカルタ）',en:'Indonesia (Jakarta)',zh:'印尼（雅加達）'}},
-  {id:'Asia/Kolkata',n:{ja:'インド（コルカタ）',en:'India (Kolkata)',zh:'印度（加爾各答）'}},
-  {id:'Asia/Dubai',n:{ja:'UAE（ドバイ）',en:'UAE (Dubai)',zh:'阿聯酋（杜拜）'}},
-  {id:'Europe/Moscow',n:{ja:'ロシア（モスクワ）',en:'Russia (Moscow)',zh:'俄羅斯（莫斯科）'}},
-  {id:'Europe/Istanbul',n:{ja:'トルコ（イスタンブール）',en:'Turkey (Istanbul)',zh:'土耳其（伊斯坦堡）'}},
-  {id:'Europe/Berlin',n:{ja:'ドイツ（ベルリン）',en:'Germany (Berlin)',zh:'德國（柏林）'}},
-  {id:'Europe/Paris',n:{ja:'フランス（パリ）',en:'France (Paris)',zh:'法國（巴黎）'}},
-  {id:'Europe/Rome',n:{ja:'イタリア（ローマ）',en:'Italy (Rome)',zh:'義大利（羅馬）'}},
-  {id:'Europe/Madrid',n:{ja:'スペイン（マドリード）',en:'Spain (Madrid)',zh:'西班牙（馬德里）'}},
-  {id:'Europe/London',n:{ja:'イギリス（ロンドン）',en:'UK (London)',zh:'英國（倫敦）'}},
-  {id:'UTC',n:{ja:'協定世界時（UTC）',en:'UTC',zh:'世界協調時間（UTC）'}},
-  {id:'America/Sao_Paulo',n:{ja:'ブラジル（サンパウロ）',en:'Brazil (São Paulo)',zh:'巴西（聖保羅）'}},
-  {id:'America/New_York',n:{ja:'アメリカ東部（ニューヨーク）',en:'US East (New York)',zh:'美東（紐約）'}},
-  {id:'America/Chicago',n:{ja:'アメリカ中部（シカゴ）',en:'US Central (Chicago)',zh:'美中（芝加哥）'}},
-  {id:'America/Denver',n:{ja:'アメリカ山岳部（デンバー）',en:'US Mountain (Denver)',zh:'美山區（丹佛）'}},
-  {id:'America/Los_Angeles',n:{ja:'アメリカ西部（ロサンゼルス）',en:'US West (Los Angeles)',zh:'美西（洛杉磯）'}},
-  {id:'America/Vancouver',n:{ja:'カナダ（バンクーバー）',en:'Canada (Vancouver)',zh:'加拿大（溫哥華）'}},
-  {id:'America/Toronto',n:{ja:'カナダ（トロント）',en:'Canada (Toronto)',zh:'加拿大（多倫多）'}},
+  {id:'Asia/Bangkok',n:{ja:'タイ（バンコク）',en:'Thailand (Bangkok)',zh:'泰国（曼谷）'}},
+  {id:'Asia/Jakarta',n:{ja:'インドネシア（ジャカルタ）',en:'Indonesia (Jakarta)',zh:'印度尼西亚（雅加达）'}},
+  {id:'Asia/Kolkata',n:{ja:'インド（コルカタ）',en:'India (Kolkata)',zh:'印度（加尔各答）'}},
+  {id:'Asia/Dubai',n:{ja:'UAE（ドバイ）',en:'UAE (Dubai)',zh:'阿联酋（迪拜）'}},
+  {id:'Europe/Moscow',n:{ja:'ロシア（モスクワ）',en:'Russia (Moscow)',zh:'俄罗斯（莫斯科）'}},
+  {id:'Europe/Istanbul',n:{ja:'トルコ（イスタンブール）',en:'Turkey (Istanbul)',zh:'土耳其（伊斯坦布尔）'}},
+  {id:'Europe/Berlin',n:{ja:'ドイツ（ベルリン）',en:'Germany (Berlin)',zh:'德国（柏林）'}},
+  {id:'Europe/Paris',n:{ja:'フランス（パリ）',en:'France (Paris)',zh:'法国（巴黎）'}},
+  {id:'Europe/Rome',n:{ja:'イタリア（ローマ）',en:'Italy (Rome)',zh:'意大利（罗马）'}},
+  {id:'Europe/Madrid',n:{ja:'スペイン（マドリード）',en:'Spain (Madrid)',zh:'西班牙（马德里）'}},
+  {id:'Europe/London',n:{ja:'イギリス（ロンドン）',en:'UK (London)',zh:'英国（伦敦）'}},
+  {id:'UTC',n:{ja:'協定世界時（UTC）',en:'UTC',zh:'协调世界时（UTC）'}},
+  {id:'America/Sao_Paulo',n:{ja:'ブラジル（サンパウロ）',en:'Brazil (São Paulo)',zh:'巴西（圣保罗）'}},
+  {id:'America/New_York',n:{ja:'アメリカ東部（ニューヨーク）',en:'US East (New York)',zh:'美国东部（纽约）'}},
+  {id:'America/Chicago',n:{ja:'アメリカ中部（シカゴ）',en:'US Central (Chicago)',zh:'美国中部（芝加哥）'}},
+  {id:'America/Denver',n:{ja:'アメリカ山岳部（デンバー）',en:'US Mountain (Denver)',zh:'美国山地（丹佛）'}},
+  {id:'America/Los_Angeles',n:{ja:'アメリカ西部（ロサンゼルス）',en:'US West (Los Angeles)',zh:'美国西部（洛杉矶）'}},
+  {id:'America/Vancouver',n:{ja:'カナダ（バンクーバー）',en:'Canada (Vancouver)',zh:'加拿大（温哥华）'}},
+  {id:'America/Toronto',n:{ja:'カナダ（トロント）',en:'Canada (Toronto)',zh:'加拿大（多伦多）'}},
   {id:'Pacific/Honolulu',n:{ja:'ハワイ（ホノルル）',en:'Hawaii (Honolulu)',zh:'夏威夷（檀香山）'}},
-  {id:'Australia/Sydney',n:{ja:'オーストラリア（シドニー）',en:'Australia (Sydney)',zh:'澳洲（雪梨）'}},
-  {id:'Australia/Perth',n:{ja:'オーストラリア（パース）',en:'Australia (Perth)',zh:'澳洲（伯斯）'}},
-  {id:'Pacific/Auckland',n:{ja:'ニュージーランド（オークランド）',en:'New Zealand (Auckland)',zh:'紐西蘭（奧克蘭）'}}
+  {id:'Australia/Sydney',n:{ja:'オーストラリア（シドニー）',en:'Australia (Sydney)',zh:'澳大利亚（悉尼）'}},
+  {id:'Australia/Perth',n:{ja:'オーストラリア（パース）',en:'Australia (Perth)',zh:'澳大利亚（珀斯）'}},
+  {id:'Pacific/Auckland',n:{ja:'ニュージーランド（オークランド）',en:'New Zealand (Auckland)',zh:'新西兰（奥克兰）'}}
 ];
 function findTz(id){for(var i=0;i<TZS.length;i++)if(TZS[i].id===id)return TZS[i];return TZS[0];}
 function tzName(tz,l){return tz.n[l];}
@@ -327,7 +326,7 @@ function tzNameHtml(tz){
   return '<span class="sec">'+tzName(tz,L2)+'</span>'+tzName(tz,L1);
 }
 
-/* ===== 時區偏移（通用算法） ===== */
+/* ===== 时区偏移（通用算法） ===== */
 function tzOffsetMin(tz,ms){
   try{
     var f=new Intl.DateTimeFormat('en-US',{timeZone:tz,hour12:false,
@@ -351,7 +350,7 @@ function isDst(id,ms){
   return tzOffsetMin(id,ms)===Math.max(jan,jul);
 }
 
-/* ============ 狀態 ============ */
+/* ============ 状态 ============ */
 var todayJP=(function(){
   var o=tzOffsetMin('Asia/Tokyo',Date.now());
   var d=new Date(Date.now()+o*60000);
@@ -365,7 +364,7 @@ var confirmed=selected.slice();
 var slots=[{date:todayJP,start:'22:00',end:'23:00'}];
 var showResults=true;
 
-/* ============ 彈層 ============ */
+/* ============ 弹层 ============ */
 function closeAllPops(){
   var ps=document.querySelectorAll('.pop.show');
   for(var i=0;i<ps.length;i++)ps[i].classList.remove('show');
@@ -376,9 +375,9 @@ document.addEventListener('click',function(e){
   if(!e.target.closest('.field')) closeAllPops();
 });
 
-/* ============ 靜態文字 ============ */
+/* ============ 静态文字 ============ */
 function applyStatic(){
-  document.documentElement.lang=L1==='zh'?'zh-Hant':L1;
+  document.documentElement.lang=L1==='zh'?'zh-Hans':L1;
   document.title=Tl(L1,'title');
   $('lbMain').textContent=Tl(L1,'langMain');
   $('lbSec').textContent=Tl(L1,'langSec');
@@ -398,7 +397,7 @@ function applyStatic(){
   $('foot').innerHTML=T('foot');
 }
 
-/* ============ 時區清單 ============ */
+/* ============ 时区列表 ============ */
 function renderTzList(){
   var q=$('tzSearch').value.trim().toLowerCase();
   var now=Date.now(),h='';
@@ -443,7 +442,7 @@ $('confirmBtn').onclick=function(){
   $('results').scrollIntoView({behavior:'smooth',block:'start'});
 };
 
-/* ============ 時間段 ============ */
+/* ============ 时间段 ============ */
 function dateText(s){
   var a=s.split('-').map(Number);
   var w=I18N[L1].wd[new Date(a[0],a[1]-1,a[2]).getDay()];
@@ -532,7 +531,7 @@ $('slots').addEventListener('click',function(e){
   if(e.target.closest('[data-done]')){ closeAllPops(); return; }
 });
 
-/* 月曆 */
+/* 日历 */
 function openCal(pop,i){
   var a=slots[i].date.split('-').map(Number);
   pop._view=[a[0],a[1]-1]; drawCal(pop,i);
@@ -560,7 +559,7 @@ function drawCal(pop,i){
   pop.innerHTML=h;
 }
 
-/* 時間滾輪 */
+/* 时间滚轮 */
 function openTime(pop,i,key){
   var hh='',mm='',k;
   for(k=0;k<24;k++) hh+='<div class="opt" data-v="'+pad(k)+'">'+pad(k)+'</div>';
@@ -609,7 +608,7 @@ function setTimePart(i,key,part,v,pop){
   renderResults();
 }
 
-/* ============ 換算 ============ */
+/* ============ 换算 ============ */
 function baseToUTC(tz,dateStr,timeStr,plusDay){
   var a=dateStr.split('-').map(Number), b=timeStr.split(':').map(Number);
   var guess=Date.UTC(a[0],a[1]-1,a[2]+plusDay,b[0],b[1]);
@@ -658,7 +657,7 @@ function renderResults(){
   box.innerHTML=html;
 }
 
-/* ============ 語言切換 ============ */
+/* ============ 语言切换 ============ */
 $('langMain').onchange=function(){
   L1=this.value; if(L2===L1)L2='none';
   localStorage.setItem('tz_l1',L1); localStorage.setItem('tz_l2',L2); refreshAll();
