@@ -174,37 +174,26 @@
   .btn-primary .sec{color:rgba(255,255,255,.85)}
   .hint{font-size:12px;color:var(--sub);margin-top:8px;text-align:center}
 
-  /* ③ 横向滑动卡片 */
-  .res-track{
-    display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;
-    scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
-    overscroll-behavior-x:contain;scrollbar-width:none;
-    margin:0 -20px;padding:2px 20px 4px;scroll-padding:0 20px;
+  /* ③ 结果表：左列时区固定，右侧每个时间段一列，左右拖动 */
+  .res-grid{
+    --nmw:14em; --colw:172px;
+    display:grid;overflow-x:auto;overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+    scroll-snap-type:x proximity;scrollbar-width:none;
   }
-  .res-track::-webkit-scrollbar{display:none}
-  .res-card{
-    flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;
-    border:1px solid var(--line);border-radius:16px;padding:12px 14px;background:var(--card);
-  }
-  .res-track.multi .res-card{flex-basis:calc(100% - 22px)}
-  .res-head{display:flex;flex-direction:column;gap:2px;
-    padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:2px}
+  .res-grid::-webkit-scrollbar{display:none}
+  .res-grid.drag{scroll-snap-type:none;cursor:grabbing;user-select:none}
+  .rc{padding:10px 10px;border-bottom:1px solid var(--line);min-width:0}
+  .rc.last{border-bottom:none}
+  .rc.nm{position:sticky;left:0;z-index:1;background:var(--card);padding-left:0;padding-right:12px;max-width:var(--nmw);
+    display:flex;align-items:center}
+  .rc.hd{padding-top:0;scroll-snap-align:start}
+  .rc.nm.hd{scroll-snap-align:none}
   .res-title{font-size:13px;font-weight:600;color:var(--accent)}
-  .res-base{font-size:12px;color:var(--sub)}
-  .res-nav{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:12px}
-  .dots{display:flex;gap:2px}
-  .dot{width:22px;height:22px;border:none;background:transparent;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
-  .dot::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--line);transition:background .2s,transform .2s}
-  .dot.on::before{background:var(--accent);transform:scale(1.15)}
-  .res-arrow{display:none;width:32px;height:32px;border-radius:50%;border:none;background:var(--chip);color:var(--accent);font-size:20px;line-height:1;cursor:pointer}
-  .res-arrow:disabled{opacity:.35;cursor:default}
-  @media (hover:hover) and (pointer:fine){.res-arrow{display:inline-block}}
-  .result{display:flex;justify-content:space-between;align-items:center;padding:10px 0;gap:10px}
-  .place{min-width:0}
-  .place .name{font-size:16px;font-weight:600}
-  .place .name .sec{font-weight:400}
-  .tzc{font-size:12px;color:var(--sub);margin-top:2px}
-  .time{text-align:right}
+  .res-base{font-size:12px;color:var(--sub);line-height:1.4}
+  .name{font-size:16px;font-weight:600;line-height:1.3}
+  .name .sec{font-weight:400}
+  .tzc{font-size:12px;color:var(--sub);margin-top:2px;white-space:nowrap}
   .date{font-size:12.5px;color:var(--sub);line-height:1.5}
 /* 日期：主语言(第1行，正常大小) / 第二语言(第2行，0.8倍) */
   .date .d1,.date .d2{display:block;width:0;min-width:100%}/* 不撑宽右栏，宽度跟随时间范围 */
@@ -218,6 +207,7 @@
   @media (max-width:500px){
     .slot .row{grid-template-columns:1fr 1fr}
     .slot .row .field:first-child{grid-column:1/-1}
+    .res-grid{--nmw:7.5em; --colw:150px}
   }
   @media (max-width:430px){
   .lang-box{font-size:11px;gap:4px}
@@ -548,7 +538,7 @@ $('addSlot').onclick=function(){
   var last=slots[slots.length-1];
   slots.push({date:last.date,start:last.start,end:last.end});
   renderSlots(); renderResults();
-  var tr=$('results').querySelector('.res-track'); if(tr) goCard(tr,slots.length-1);
+  var gr=$('results').querySelector('.res-grid'); if(gr) gr.scrollTo({left:gr.scrollWidth,behavior:'smooth'});
   var els=document.querySelectorAll('.slot');
   els[els.length-1].scrollIntoView({behavior:'smooth',block:'center'});
 };
@@ -699,73 +689,73 @@ function renderResults(){
   var html='<h2>'+T('resTitle')+'</h2>';
   if(!confirmed.length){ html+='<div class="empty">'+T('empty')+'</div>'; box.innerHTML=html; return; }
 
-  var oldTrack=box.querySelector('.res-track');
-  if(oldTrack) resIdx=trackIdx(oldTrack);
-  resIdx=Math.min(Math.max(resIdx,0),slots.length-1);
+  var old=box.querySelector('.res-grid'), oldLeft=old?old.scrollLeft:0;
+  var multi=slots.length>1, n=confirmed.length;
 
-  html+='<div class="res-track'+(slots.length>1?' multi':'')+'">';
+  /* 先算出每个时间段的起止 UTC */
+  var spans=[];
   for(var idx=0;idx<slots.length;idx++){
     var s=slots[idx];
     var startMs=baseToUTC(baseTz,s.date,s.start,0);
     var endMs=baseToUTC(baseTz,s.date,s.end,0);
     if(endMs<=startMs) endMs=baseToUTC(baseTz,s.date,s.end,1);
-    html+='<div class="res-card">'
-      +'<div class="res-head"><span class="res-title">'+Tl(L1,'slot',idx+1)+'</span>'
-      +'<span class="res-base">'+dateText(s.date)+' '+s.start+' – '+endText(s)+'</span></div>';
-    for(var c=0;c<confirmed.length;c++){
-      var id=confirmed[c], t=findTz(id);
-      var a=fmtIn(startMs,id), b=fmtIn(endMs,id);
-      var same=a.key===b.key;
-      var badge=isDst(id,startMs)?'<span class="badge">'+Tl(L1,'dst')+'</span>':'';
-      html+='<div class="result"><div class="place"><div class="name">'+tzNameHtml(t)+badge+'</div>'
-        +'<div class="tzc">'+offsetStr(id,startMs)+'</div></div>'
-        +'<div class="time"><div class="date">'+dateHtml(a,same?null:b)+'</div>'
-        +'<div class="range">'+a.time+' – '+b.time+'</div></div></div>';
+    spans.push([startMs,endMs]);
+  }
+
+  /* 网格按行输出：表头行（多时间段时） + 每个时区一行 */
+  html+='<div class="res-grid" style="grid-template-columns:max-content repeat('+slots.length+',var(--colw))">';
+  if(multi){
+    html+='<div class="rc nm hd"></div>';
+    for(var h=0;h<slots.length;h++){
+      html+='<div class="rc hd"><div class="res-title">'+Tl(L1,'slot',h+1)+'</div>'
+        +'<div class="res-base">'+dateText(slots[h].date)+'<br>'+slots[h].start+' – '+endText(slots[h])+'</div></div>';
     }
-    html+='</div>';
+  }
+  for(var c=0;c<n;c++){
+    var id=confirmed[c], last=(c===n-1)?' last':'';
+    html+='<div class="rc nm'+last+'"><div class="name">'+tzNameHtml(findTz(id))+'</div></div>';
+    for(var k=0;k<spans.length;k++){
+      var a=fmtIn(spans[k][0],id), b=fmtIn(spans[k][1],id);
+      var badge=isDst(id,spans[k][0])?'<span class="badge">'+Tl(L1,'dst')+'</span>':'';
+      html+='<div class="rc'+last+'"><div class="date">'+dateHtml(a,a.key===b.key?null:b)+'</div>'
+        +'<div class="range">'+a.time+' – '+b.time+'</div>'
+        +'<div class="tzc">'+offsetStr(id,spans[k][0])+badge+'</div></div>';
+    }
   }
   html+='</div>';
-  if(slots.length>1){
-    html+='<div class="res-nav"><button class="res-arrow" type="button" data-step="-1" aria-label="prev">‹</button><div class="dots">';
-    for(var di=0;di<slots.length;di++) html+='<button class="dot" type="button" data-go="'+di+'" aria-label="'+(di+1)+'"></button>';
-    html+='</div><button class="res-arrow" type="button" data-step="1" aria-label="next">›</button></div>';
-  }
   box.innerHTML=html;
 
-  var track=box.querySelector('.res-track');
-  track.scrollLeft=resIdx*cardStep(track);
-  updateNav(track);
-  var st;
-  track.addEventListener('scroll',function(){
-    clearTimeout(st);
-    st=setTimeout(function(){ resIdx=trackIdx(track); updateNav(track); },60);
-  },{passive:true});
+  var grid=box.querySelector('.res-grid');
+  var nm=grid.querySelector('.rc.nm');
+  grid.style.scrollPaddingLeft=nm.offsetWidth+'px';
+  grid.scrollLeft=oldLeft;
 }
 
-/* 卡片滑动辅助 */
-var resIdx=0;
-function cardStep(track){
-  var c=track.querySelector('.res-card');
-  return c?c.offsetWidth+12:1;
-}
-function trackIdx(track){ return Math.round(track.scrollLeft/cardStep(track)); }
-function goCard(track,i){
-  i=Math.min(Math.max(i,0),track.children.length-1);
-  track.scrollTo({left:i*cardStep(track),behavior:'smooth'});
-}
-function updateNav(track){
-  var i=trackIdx(track), box=$('results');
-  var ds=box.querySelectorAll('.dot');
-  for(var k=0;k<ds.length;k++) ds[k].classList.toggle('on',k===i);
-  var ar=box.querySelectorAll('.res-arrow');
-  if(ar.length){ ar[0].disabled=i<=0; ar[1].disabled=i>=track.children.length-1; }
-}
-$('results').addEventListener('click',function(e){
-  var track=$('results').querySelector('.res-track'); if(!track) return;
-  var b=e.target.closest('[data-go],[data-step]'); if(!b) return;
-  if(b.hasAttribute('data-go')) goCard(track,+b.getAttribute('data-go'));
-  else goCard(track,trackIdx(track)+(+b.getAttribute('data-step')));
-});
+/* PC 上用鼠标拖动结果表（触屏用原生滑动） */
+(function(){
+  var grid=null,sx=0,sl=0,moved=false;
+  $('results').addEventListener('pointerdown',function(e){
+    if(e.pointerType!=='mouse'||e.button!==0) return;
+    grid=e.target.closest('.res-grid'); if(!grid||grid.scrollWidth<=grid.clientWidth){grid=null;return;}
+    sx=e.clientX; sl=grid.scrollLeft; moved=false;
+  });
+  window.addEventListener('pointermove',function(e){
+    if(!grid) return;
+    var dx=e.clientX-sx;
+    if(!moved&&Math.abs(dx)>4){moved=true;grid.classList.add('drag');}
+    if(moved) grid.scrollLeft=sl-dx;
+  });
+  window.addEventListener('pointerup',function(){
+    if(!grid) return;
+    var g=grid; grid=null;
+    if(!moved) return;
+    /* 松手后吸附到最近的时间段列 */
+    var col=g.querySelector('.rc.hd:not(.nm)')||g.querySelectorAll('.rc')[1];
+    var w=col.offsetWidth, i=Math.round(g.scrollLeft/w);
+    g.classList.remove('drag');
+    g.scrollTo({left:i*w,behavior:'smooth'});
+  });
+})();
 
 /* ============ 语言切换 ============ */
 $('langMain').onchange=function(){
